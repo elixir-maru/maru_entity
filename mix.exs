@@ -3,7 +3,7 @@ defmodule MaruEntity.Mixfile do
 
   def project do
     [app: :maru_entity,
-     version: "0.0.1",
+     version: "0.1.0",
      elixir: "~> 1.0",
      deps: deps]
   end
