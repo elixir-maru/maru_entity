@@ -1,3 +1,2 @@
 %{"amrita": {:git, "git://github.com/josephwilk/amrita.git", "bc28aeb2c773a71808dd814a9390758da1af744c", []},
-  "meck": {:git, "git://github.com/eproxus/meck.git", "98cdc40fe6ae7780491ed8d0db691dd15625e9b2", [branch: "master"]},
-  "poison": {:hex, :poison, "1.3.1"}}
+  "meck": {:git, "git://github.com/eproxus/meck.git", "98cdc40fe6ae7780491ed8d0db691dd15625e9b2", [branch: "master"]}}
