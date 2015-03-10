@@ -25,6 +25,12 @@ defmodule Maru.Entity.DSLTest do
     expose :title
   end
 
+  defmodule WithExposure do
+    use Maru.Entity.DSL
+
+    expose :author, with: OneExposure
+  end
+
   it "has empty exposures" do
     assert EmptyEntity.exposures == []
   end
@@ -42,6 +48,10 @@ defmodule Maru.Entity.DSLTest do
   describe "expose/2" do
     it "sets as" do
       assert AsExposure.exposures == [id: [attr: :safe_id, as: :id], title: [attr: :title, as: :title]]
+    end
+
+    it "sets with" do
+      assert WithExposure.exposures == [author: [as: :author, attr: :author, with: OneExposure]]
     end
   end
 end
