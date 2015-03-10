@@ -23,7 +23,7 @@ defmodule Maru.Entity.DSL do
 
   defmacro expose(attr, options, block) when is_atom(attr) and is_list(options) do
     if !options[:as] do
-      options = Keyword.put(:as, attr)
+      options = Keyword.put(options, :as, attr)
     end
 
     options |> Keyword.put(:attr, attr)

@@ -31,6 +31,14 @@ defmodule Maru.Entity.DSLTest do
     expose :author, with: OneExposure
   end
 
+  defmodule BlockWithoutAs do
+    use Maru.Entity.DSL
+
+    expose :author, [], fn(_r, _opt) ->
+      3
+    end
+  end
+
   it "has empty exposures" do
     assert EmptyEntity.exposures == []
   end
@@ -52,6 +60,10 @@ defmodule Maru.Entity.DSLTest do
 
     it "sets with" do
       assert WithExposure.exposures == [author: [callbacks: [], attr: :author, as: :author, with: OneExposure]]
+    end
+
+    it "sets as with block" do
+      assert BlockWithoutAs.exposures == [author: [callbacks: [block: true], attr: :author, as: :author]]
     end
   end
 end
