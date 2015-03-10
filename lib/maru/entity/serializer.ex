@@ -5,10 +5,18 @@ defmodule Maru.Entity.Serializer do
         Enum.reduce exposures, %{}, fn({as, opt}, acc) ->
           attr_value = record[opt[:attr]]
 
-          if opt[:with] do
-            Map.put(acc, as, opt[:with].serialize(attr_value, options))
+          if callbacks_permit?(record, options, opt) do
+            if has_block?(opt) do
+              Map.put(acc, as, eval_block(record, options, opt))
+            else
+              if opt[:with] do
+                Map.put(acc, as, opt[:with].serialize(attr_value, options))
+              else
+                Map.put(acc, as, attr_value)
+              end
+            end
           else
-            Map.put(acc, as, attr_value)
+            acc
           end
         end
       end
@@ -25,6 +33,44 @@ defmodule Maru.Entity.Serializer do
 
       def serialize(records) when is_list(records) do
         serialize(records, %{})
+      end
+
+      def serialize(nil) do
+        nil
+      end
+
+      def serialize(nil, options) do
+        nil
+      end
+
+      def callbacks_permit?(record, options, exp_options) do
+        if exp_options[:callbacks][:if] do
+          cb = get_callback_name(exp_options[:as], :if)
+
+          apply(__MODULE__, cb, [record, options])
+        else
+          if exp_options[:callbacks][:unless] do
+            cb = get_callback_name(exp_options[:as], :unless)
+
+            !apply(__MODULE__, cb, [record, options])
+          else
+            true
+          end
+        end
+      end
+
+      def has_block?(exp_options) do
+        exp_options[:callbacks][:block] == true
+      end
+
+      def eval_block(record, options, exp_options) do
+        cb = get_callback_name(exp_options[:as], :block)
+
+        apply(__MODULE__, cb, [record, options])
+      end
+
+      def get_callback_name(as, cb) do
+        "_cb_#{as}_#{cb}" |> String.to_atom
       end
     end
   end

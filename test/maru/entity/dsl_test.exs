@@ -37,21 +37,21 @@ defmodule Maru.Entity.DSLTest do
 
   describe "expose/1" do
     it "sets exposure" do
-      assert OneExposure.exposures == [id: [attr: :id, as: :id]]
+      assert OneExposure.exposures == [id: [callbacks: [], attr: :id, as: :id]]
     end
 
     it "sets two exposures" do
-      assert TwoExposures.exposures == [id: [attr: :id, as: :id], title: [attr: :title, as: :title]]
+      assert TwoExposures.exposures == [id: [callbacks: [], attr: :id, as: :id], title: [callbacks: [], attr: :title, as: :title]]
     end
   end
 
   describe "expose/2" do
     it "sets as" do
-      assert AsExposure.exposures == [id: [attr: :safe_id, as: :id], title: [attr: :title, as: :title]]
+      assert AsExposure.exposures == [id: [callbacks: [], attr: :safe_id, as: :id], title: [callbacks: [], attr: :title, as: :title]]
     end
 
     it "sets with" do
-      assert WithExposure.exposures == [author: [as: :author, attr: :author, with: OneExposure]]
+      assert WithExposure.exposures == [author: [callbacks: [], attr: :author, as: :author, with: OneExposure]]
     end
   end
 end
