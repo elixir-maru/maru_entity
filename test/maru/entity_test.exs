@@ -1,9 +1,9 @@
-defmodule PostEntity do
-  use Maru.Entity
-end
-
 defmodule Maru.EntityTest do
   use Amrita.Sweet, async: false
+
+  defmodule PostEntity do
+    use Maru.Entity
+  end
 
   describe "present" do
     it "returns single object" do
