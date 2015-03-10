@@ -1,4 +1,4 @@
-MaruEntity
+Maru.Entity
 ==========
 
 Elixir copy of [grape-entity](https://github.com/intridea/grape-entity) for serializing objects.
