@@ -3,7 +3,7 @@ defmodule Maru.Entity.Serializer do
     quote do
       def serialize(record, options) when is_map(record) and is_map(options) do
         Enum.reduce exposures, %{}, fn({as, opt}, acc) ->
-          attr_value = record[opt[:attr]]
+          attr_value = Map.get(record, opt[:attr])
 
           if callbacks_permit?(record, options, opt) do
             if has_block?(opt) do
