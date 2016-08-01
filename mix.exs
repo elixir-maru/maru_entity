@@ -14,6 +14,6 @@ defmodule MaruEntity.Mixfile do
   end
 
   defp deps do
-    [{ :amrita, "~> 0.4", github: "josephwilk/amrita", only: :test }]
+    []
   end
 end

@@ -13,8 +13,10 @@ defmodule Maru.Entity.DSL do
   end
 
   defmacro expose(attr, options) when is_atom(attr) and is_list(options) do
-    if !options[:as] do
-      options = Keyword.put(options, :as, attr)
+    options = unless options[:as] do
+      Keyword.put(options, :as, attr)
+    else
+      options
     end
 
     options |> Keyword.put(:attr, attr)
@@ -22,8 +24,10 @@ defmodule Maru.Entity.DSL do
   end
 
   defmacro expose(attr, options, block) when is_atom(attr) and is_list(options) do
-    if !options[:as] do
-      options = Keyword.put(options, :as, attr)
+    options = unless options[:as] do
+      Keyword.put(options, :as, attr)
+    else
+      options
     end
 
     options |> Keyword.put(:attr, attr)
@@ -31,10 +35,10 @@ defmodule Maru.Entity.DSL do
   end
 
   def expose_options(options, callbacks \\ []) do
-    options = extract_callbacks(options, callbacks)
-    callbacks = options[:callbacks]
+    {options, callbacks} = extract_callbacks(options, callbacks)
+    options = Keyword.put(options, :callbacks, callbacks)
 
-    cb_names = Enum.map callbacks, fn({cb_name, cb}) ->
+    cb_names = Enum.map callbacks, fn({cb_name, _}) ->
       {cb_name, "_cb_#{options[:as]}_#{cb_name}" |> String.to_atom }
     end
 
@@ -70,16 +74,11 @@ defmodule Maru.Entity.DSL do
   end
 
   defp extract_callbacks(options, callbacks) do
-    if options[:if] do
-      callbacks = Keyword.put(callbacks, :if, options[:if])
-      options = Keyword.delete(options, :if)
-    end
-
-    if options[:unless] do
-      callbacks = Keyword.put(callbacks, :unless, options[:unless])
-      options = Keyword.delete(options, :unless)
-    end
-
-    Keyword.put(options, :callbacks, callbacks)
+    [:if, :unless] |> Enum.reduce({options, callbacks}, fn name, {options, callbacks} ->
+      case Keyword.pop(options, name) do
+        {nil, options} -> {options, callbacks}
+        {cb, options} -> {options, Keyword.put(callbacks, name, cb)}
+      end
+    end)
   end
 end

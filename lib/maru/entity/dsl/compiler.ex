@@ -11,13 +11,12 @@ defmodule Maru.Entity.DSL.Compiler do
 
   def transform_callbacks(exposure) do
     if exposure[:callbacks] do
-      callbacks = Enum.reduce exposure[:callbacks], %{}, fn({cb_name, cb}, acc) ->
+      callbacks = Enum.reduce exposure[:callbacks], %{}, fn({cb_name, _}, acc) ->
         Map.put(acc, cb_name, true)
       end
 
       # Remove callback functions and set as true
-      exposure |> Keyword.delete(:callbacks)
-               |> Keyword.put(:callbacks, Map.to_list(callbacks))
+      exposure |> Keyword.put(:callbacks, Map.to_list(callbacks))
     else
       exposure
     end

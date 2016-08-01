@@ -1,2 +1,2 @@
-%{"amrita": {:git, "git://github.com/josephwilk/amrita.git", "bc28aeb2c773a71808dd814a9390758da1af744c", []},
-  "meck": {:git, "git://github.com/eproxus/meck.git", "98cdc40fe6ae7780491ed8d0db691dd15625e9b2", [branch: "master"]}}
+%{"amrita": {:git, "https://github.com/josephwilk/amrita.git", "753fb7c1b31d70ffbe6ac7bf6e6077983f74f98d", []},
+  "meck": {:git, "https://github.com/eproxus/meck.git", "c772db17a7c94e75d20688197f61538d63fe2ae9", [branch: "master"]}}

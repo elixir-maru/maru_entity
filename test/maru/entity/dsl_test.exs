@@ -1,5 +1,5 @@
 defmodule Maru.Entity.DSLTest do
-  use Amrita.Sweet
+  use ExUnit.Case
 
   defmodule EmptyEntity do
     use Maru.Entity.DSL
@@ -39,30 +39,30 @@ defmodule Maru.Entity.DSLTest do
     end
   end
 
-  it "has empty exposures" do
+  test"has empty exposures" do
     assert EmptyEntity.exposures == []
   end
 
   describe "expose/1" do
-    it "sets exposure" do
+    test "sets exposure" do
       assert OneExposure.exposures == [id: [callbacks: [], attr: :id, as: :id]]
     end
 
-    it "sets two exposures" do
+    test "sets two exposures" do
       assert TwoExposures.exposures == [id: [callbacks: [], attr: :id, as: :id], title: [callbacks: [], attr: :title, as: :title]]
     end
   end
 
   describe "expose/2" do
-    it "sets as" do
+    test "sets as" do
       assert AsExposure.exposures == [id: [callbacks: [], attr: :safe_id, as: :id], title: [callbacks: [], attr: :title, as: :title]]
     end
 
-    it "sets with" do
+    test "sets with" do
       assert WithExposure.exposures == [author: [callbacks: [], attr: :author, as: :author, with: OneExposure]]
     end
 
-    it "sets as with block" do
+    test "sets as with block" do
       assert BlockWithoutAs.exposures == [author: [callbacks: [block: true], attr: :author, as: :author]]
     end
   end

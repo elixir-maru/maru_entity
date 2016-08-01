@@ -4,4 +4,3 @@ if System.get_env("MIX_ENV") != "test" do
 end
 
 ExUnit.start
-Amrita.start
