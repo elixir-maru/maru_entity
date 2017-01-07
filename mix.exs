@@ -6,7 +6,7 @@ defmodule MaruEntity.Mixfile do
      version: "0.1.2",
      elixir: "~> 1.0",
      description: "Elixir copy of grape-entity",
-     deps: deps]
+     deps: deps()]
   end
 
   def application do
