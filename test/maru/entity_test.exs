@@ -6,37 +6,37 @@ defmodule Maru.EntityTest do
 
     expose :id
     expose :title
-    expose :body, as: :content
+    expose :content, source: :body
   end
 
   defmodule CommentEntity do
     use Maru.Entity
 
     expose :body
-    expose :post, with: PostEntity
+    expose :post, using: Maru.EntityTest.PostEntity
   end
 
   defmodule IfCommentEntity do
     use Maru.Entity
 
     expose :body
-    expose :post, with: PostEntity, if: fn(comment, _options) -> comment.post != nil end
+    expose :post, using: Maru.EntityTest.PostEntity, if: fn(comment, _options) -> comment.post != nil end
   end
 
   defmodule UnlessCommentEntity do
     use Maru.Entity
 
     expose :body
-    expose :post, with: PostEntity, unless: fn(comment, _options) -> comment.post == nil end
+    expose :post, using: Maru.EntityTest.PostEntity, unless: fn(comment, _options) -> comment.post == nil end
   end
 
   defmodule AuthorEntity do
     use Maru.Entity
 
     expose :name
-    expose :posts, with: PostEntity
+    expose :posts, using: List[Maru.EntityTest.PostEntity]
 
-    expose :post_count, [as: :post_count], fn(author, _options) ->
+    expose :post_count, [], fn(author, _options) ->
       length(author.posts)
     end
   end

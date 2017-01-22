@@ -1,2 +1,0 @@
-defmodule MaruEntity do
-end

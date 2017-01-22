@@ -10,7 +10,8 @@ defmodule MaruEntity.Mixfile do
   end
 
   def application do
-    [applications: [:logger]]
+    [ applications: [:logger],
+    ]
   end
 
   defp deps do
