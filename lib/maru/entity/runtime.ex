@@ -5,7 +5,7 @@ alias Maru.Entity.Struct.Serializer
 defmodule Maru.Entity.Runtime do
   def serialize(serializer, instance) do
     state = init()
-    id = save_link(serializer, instance, state)
+    id = save_link(serializer, instance, state.old_link)
     do_loop(state)
     terminate(id, serializer.type, state)
   end
@@ -41,17 +41,17 @@ defmodule Maru.Entity.Runtime do
   end
 
 
-  defp save_link(%Serializer{type: :one}=s, instance, state) do
+  defp save_link(%Serializer{type: :one}=s, instance, ets) do
     id = make_ref()
-    :ets.insert(state.old_link, {id, s, instance})
+    :ets.insert(ets, {id, s, instance})
     id
   end
 
 
-  defp save_link(%Serializer{type: :list}=s, instances, state) do
+  defp save_link(%Serializer{type: :list}=s, instances, ets) do
     id = make_ref()
     Enum.each(instances, fn i ->
-      :ets.insert(state.old_link, {id, s, i})
+      :ets.insert(ets, {id, s, i})
     end)
     id
   end
@@ -189,23 +189,13 @@ defmodule Maru.Entity.Runtime do
     }
   end
 
-  defp do_update(%Serializer{type: :one}=s, %Batch{}=batch, field, result, options, state) do
+  defp do_update(serializer, %Batch{}=batch, field, result, options, state) do
     id = make_ref()
-    s = %{s | options: options}
+    s = %{serializer | options: options}
     :ets.insert(state.new_batch, {id, s, batch})
     %Instance{
       data: put_in(result.data, field.attr_name, nil),
-      links: [{field.attr_name, :one, id} | result.links],
-    }
-  end
-
-  defp do_update(%Serializer{type: :list}=s, %Batch{}=batch, field, result, options, state) do
-    id = make_ref()
-    s = %{s | options: options}
-    :ets.insert(state.new_batch, {id, s, batch})
-    %Instance{
-      data: put_in(result.data, field.attr_name, nil),
-      links: [{field.attr_name, :list, id} | result.links],
+      links: [{field.attr_name, serializer.type, id} | result.links],
     }
   end
 
@@ -215,25 +205,12 @@ defmodule Maru.Entity.Runtime do
     }
   end
 
-  defp do_update(%Serializer{type: :one}=s, instance, field, result, options, state) do
-    id = make_ref()
-    s = %{s | options: options}
-    :ets.insert(state.new_link, {id, s, instance})
+  defp do_update(serializer, instance, field, result, options, state) do
+    s = %{serializer | options: options}
+    id = save_link(s, instance, state.new_link)
     %Instance{
       data: put_in(result.data, field.attr_name, nil),
-      links: [{field.attr_name, :one, id} | result.links],
-    }
-  end
-
-  defp do_update(%Serializer{type: :list}=s, instances, field, result, options, state) do
-    id = make_ref()
-    s = %{s | options: options}
-    Enum.each(instances, fn i ->
-      :ets.insert(state.new_link, {id, s, i})
-    end)
-    %Instance{
-      data: put_in(result.data, field.attr_name, nil),
-      links: [{field.attr_name, :list, id} | result.links],
+      links: [{field.attr_name, serializer.type, id} | result.links],
     }
   end
 
