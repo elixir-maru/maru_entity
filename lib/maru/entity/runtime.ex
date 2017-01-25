@@ -58,10 +58,8 @@ defmodule Maru.Entity.Runtime do
 
 
   defp do_build(id, :one, ets) do
-    case :ets.lookup(ets, id) do
-      []         -> IO.puts "miss #{inspect id}" # TODO handle error
-      [{_id, i}] -> do_build_one(i, ets)
-    end
+    [{_id, i}] = :ets.lookup(ets, id)
+    do_build_one(i, ets)
   end
 
   defp do_build(id, :list, ets) do
@@ -140,11 +138,11 @@ defmodule Maru.Entity.Runtime do
             })
         end
       end, %{}, state.old_batch)
-      |> Enum.map(fn {module, value} ->
-        {module, Task.async(module, :resolve, [Map.keys(value)])}
+      |> Enum.map(fn
+        {module, value} -> {module, Task.async(module, :resolve, [Map.keys(value)])}
       end)
-      |> Enum.map(fn {module, task} ->
-        {module, Task.await(task)}
+      |> Enum.map(fn
+        {module, task} -> {module, Task.await(task)}
       end)
       |> Enum.into(%{})
 
@@ -154,13 +152,22 @@ defmodule Maru.Entity.Runtime do
           :ets.insert(state.old_link, {id, %{s | type: :one}, instance})
         end)
         :ok
-      {id, s, %Batch{module: module, key: key}}, _ ->
+      {id, %Serializer{type: :one}=s, %Batch{module: module, key: key}}, _ ->
         instance = get_in(data, [module, key])
-        :ets.insert(state.old_link, {id, %{s | type: :one}, instance})
+        :ets.insert(state.old_link, {id, s, instance})
+        :ok
+      {id, nil, %Batch{module: module, key: key}}, _ ->
+        instance = get_in(data, [module, key])
+        :ets.insert(state.old_link, {id, nil, instance})
         :ok
     end, :ok, state.old_batch)
   end
 
+
+  def do_serialize({id, nil, instance}, state) do
+    result = %Instance{data: instance, links: []}
+    :ets.insert(state.data, {id, result})
+  end
 
   def do_serialize({id, serializer, instance}, state) do
     exposures = serializer.module.__exposures__
