@@ -93,5 +93,103 @@ defmodule Maru.EntityTest do
       assert UnlessCommentEntity.serialize(comment1) == %{body: "body"}
       assert UnlessCommentEntity.serialize(comment2) == %{body: "body", post: %{id: 3, title: "asdf", content: "a"}}
     end
+
+    test "batch helper for object" do
+      defmodule PostEntity2 do
+        use Maru.Entity
+
+        expose :id
+        expose :author, using: Maru.EntityTest.AuthorEntity2, batch: Maru.EntityTest.AuthorEntity2.BatchHelper
+      end
+
+      defmodule AuthorEntity2 do
+        use Maru.Entity
+
+        expose :id
+        expose :name
+      end
+
+      defmodule AuthorEntity2.BatchHelper do
+        def key(instance, _) do
+          instance.author_id
+        end
+
+        def resolve(keys) do
+          for id <- keys, into: %{} do
+            {id, %{id: id, name: "Author#{id}"}}
+          end
+        end
+      end
+
+      posts = [%{id: 100, author_id: 1}, %{id: 110, author_id: 3}, %{id: 130, author_id: 7}]
+      assert [
+        %{id: 100, author: %{id: 1, name: "Author1"}},
+        %{id: 110, author: %{id: 3, name: "Author3"}},
+        %{id: 130, author: %{id: 7, name: "Author7"}},
+      ] = PostEntity2.serialize(posts)
+    end
+
+    test "batch helper for list of objects" do
+      defmodule PostEntity3 do
+        use Maru.Entity
+
+        expose :id
+        expose :author, using: List[Maru.EntityTest.AuthorEntity3], batch: Maru.EntityTest.AuthorEntity3.BatchHelper
+      end
+
+      defmodule AuthorEntity3 do
+        use Maru.Entity
+
+        expose :id
+        expose :name
+      end
+
+      defmodule AuthorEntity3.BatchHelper do
+        def key(instance, _) do
+          instance.author_id
+        end
+
+        def resolve(keys) do
+          for id <- keys, into: %{} do
+            {id, [%{id: id, name: "Author1_#{id}"}, %{id: id, name: "Author2_#{id}"}]}
+          end
+        end
+      end
+
+      posts = [%{id: 100, author_id: 1}, %{id: 110, author_id: 3}, %{id: 130, author_id: 7}]
+      assert [
+        %{id: 100, author: [%{id: 1, name: "Author1_1"}, %{id: 1, name: "Author2_1"}]},
+        %{id: 110, author: [%{id: 3, name: "Author1_3"}, %{id: 3, name: "Author2_3"}]},
+        %{id: 130, author: [%{id: 7, name: "Author1_7"}, %{id: 7, name: "Author2_7"}]},
+      ] = PostEntity3.serialize(posts)
+    end
+
+    test "batch helper for non-object value" do
+      defmodule PostEntity4 do
+        use Maru.Entity
+
+        expose :id
+        expose :author, batch: Maru.EntityTest.AuthorEntity4.BatchHelper
+      end
+
+      defmodule AuthorEntity4.BatchHelper do
+        def key(instance, _) do
+          instance.author_id
+        end
+
+        def resolve(keys) do
+          for id <- keys, into: %{} do
+            {id, %{name: "Author#{id}"}}
+          end
+        end
+      end
+
+      posts = [%{id: 100, author_id: 1}, %{id: 110, author_id: 3}, %{id: 130, author_id: 7}]
+      assert [
+        %{id: 100, author: %{name: "Author1"}},
+        %{id: 110, author: %{name: "Author3"}},
+        %{id: 130, author: %{name: "Author7"}},
+      ] = PostEntity4.serialize(posts)
+    end
   end
 end
