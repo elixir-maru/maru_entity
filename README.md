@@ -15,23 +15,44 @@ defmodule PostEntity do
 
   expose :disabled, if: fn(post, _options) -> post.is_disabled end
   expose :active, unless: fn(post, _options) -> post.is_disabled end
+
+  expose :comments, using: List[PostEntity], fn(post, _options) ->
+    query =
+      from c in Comment,
+        where: c.post_id == post.id,
+        select: c
+    Repo.all(query)
+  end
 end
 
 defmodule CommentEntity do
   use Maru.Entity
 
+  expose :id
   expose :body
-  expose :post, using: PostEntity, if: fn(comment, _options) -> comment.post != nil end
+  expose :author, using: AuthorEntity, batch: CommentAuthor.BatchHelper
 end
 
 defmodule AuthorEntity do
   use Maru.Entity
 
-  expose :name
-  expose :posts, using: List[PostEntity]
+  expose :id
+  expose :name, [], fn(author, _options) ->
+    "#{author.first_name} #{author.last_name}"
+  end
+end
 
-  expose :posts_count, [], fn(author, options) ->
-    length(author.posts)
+defmodule CommentAuthor.BatchHelper do
+  def key(comment, _optiosn) do
+    comment.author_id
+  end
+
+  def resolve(ids) do
+    query =
+      from a in Author,
+        where: a.id in ids,
+        select: a
+    Repo.all(query) |> Map.new(&{&1.id, &1})
   end
 end
 ```
