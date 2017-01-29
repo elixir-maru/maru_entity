@@ -80,13 +80,13 @@ defmodule Maru.Entity.Runtime do
 
   defp do_loop(state) do
     unless :ets.info(state.old_link)[:size] == 0 do
-      do_loop_link(state)
+      do_loop_link_monitor(state)
     end
 
     unless :ets.info(state.old_batch)[:size] == 0 do
       :ets.delete_all_objects(state.old_link)
       do_loop_batch(state)
-      do_loop_link(state)
+      do_loop_link_monitor(state)
     end
 
     case :ets.info(state.new_link)[:size] + :ets.info(state.new_batch)[:size] do
@@ -104,16 +104,27 @@ defmodule Maru.Entity.Runtime do
   end
 
 
+  defp do_loop_link_monitor(state) do
+    {pid, ref} = Process.spawn(fn -> do_loop_link(state) end, [:monitor])
+    receive do
+      {:DOWN, ^ref, :process, ^pid, :normal} -> :ok
+      {:DOWN, ^ref, :process, ^pid, {:error, exception, stack}} ->
+        raise Maru.Entity.Exceptions.SerializeError, [
+          exception: exception, stack: stack
+        ]
+    end
+  end
+
   defp do_loop_link(state) do
     {_, rest} = :ets.foldl(fn
       term, {0, rest} ->
         receive do
           {:DOWN, _ref, :process, _pid, :normal} ->
-            Process.spawn(__MODULE__, :do_serialize, [term, state], [:monitor])
+            Process.spawn(__MODULE__, :do_serialize, [term, state], [:monitor, :link])
         end
         {0, rest}
       term, {num, rest} ->
-        Process.spawn(__MODULE__, :do_serialize, [term, state], [:monitor])
+        Process.spawn(__MODULE__, :do_serialize, [term, state], [:monitor, :link])
         {num - 1, rest + 1}
     end, {state.max_concurrency, 0}, state.old_link)
 
@@ -173,6 +184,8 @@ defmodule Maru.Entity.Runtime do
     exposures = serializer.module.__exposures__
     result = do_serialize(exposures, %Instance{}, instance, serializer.options, state)
     :ets.insert(state.data, {id, result})
+  rescue
+    e -> exit({:error, e, System.stacktrace()})
   end
 
   defp do_serialize([], result, _instance, _options, _state), do: result

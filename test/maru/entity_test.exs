@@ -191,5 +191,29 @@ defmodule Maru.EntityTest do
         %{id: 130, author: %{name: "Author7"}},
       ] = PostEntity4.serialize(posts)
     end
+
+
+    test "exception" do
+      defmodule PostEntity5 do
+        use Maru.Entity
+
+        expose :id
+        expose :author, using: Maru.EntityTest.AuthorEntity5
+      end
+
+      defmodule AuthorEntity5 do
+        use Maru.Entity
+
+        expose :id, [], fn(_instance, _) ->
+          raise "ERROR"
+        end
+      end
+
+      post = %{id: 100, author_id: 1}
+      assert_raise Maru.Entity.Exceptions.SerializeError, "ERROR", fn ->
+        PostEntity5.serialize(post)
+      end
+    end
+
   end
 end
