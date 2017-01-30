@@ -210,7 +210,7 @@ defmodule Maru.EntityTest do
       end
 
       post = %{id: 100, author_id: 1}
-      assert_raise Maru.Entity.Exceptions.SerializeError, "ERROR", fn ->
+      assert_raise RuntimeError, "ERROR", fn ->
         PostEntity5.serialize(post)
       end
     end

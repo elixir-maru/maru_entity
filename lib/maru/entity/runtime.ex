@@ -132,9 +132,7 @@ defmodule Maru.Entity.Runtime do
     receive do
       {:DOWN, ^ref, :process, ^pid, :normal} -> :ok
       {:DOWN, ^ref, :process, ^pid, {:error, exception, stack}} ->
-        raise Maru.Entity.Exceptions.SerializeError, [
-          exception: exception, stack: stack
-        ]
+        :erlang.raise(:error, exception, stack)
     end
   end
 
