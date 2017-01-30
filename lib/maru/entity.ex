@@ -1,9 +1,17 @@
-defmodule Maru.Entity do
-  alias Maru.Entity.Struct.Batch
-  alias Maru.Entity.Struct.Serializer
-  alias Maru.Entity.Struct.Exposure.Information
-  alias Maru.Entity.Struct.Exposure.Runtime
+alias Maru.Entity.Struct.Batch
+alias Maru.Entity.Struct.Serializer
+alias Maru.Entity.Struct.Exposure.Runtime
 
+defmodule Maru.Entity do
+  @moduledoc """
+  """
+
+  @type instance    :: map
+  @type object      :: map
+  @type options     :: map
+  @type one_or_list :: :one | :list
+
+  @doc false
   defmacro __using__(_) do
     quote do
       Module.register_attribute __MODULE__, :exposures, accumulate: true
@@ -13,12 +21,14 @@ defmodule Maru.Entity do
     end
   end
 
+  @spec expose(atom) :: Macro.t
   defmacro expose(attr_name) when is_atom(attr_name) do
     quote do
       @exposures(parse([attr_name: unquote(attr_name)]))
     end
   end
 
+  @spec expose(atom, Keyword.t) :: Macro.t
   defmacro expose(attr_name, options) when is_atom(attr_name) and is_list(options) do
     options = Macro.escape(options)
     quote do
@@ -28,6 +38,7 @@ defmodule Maru.Entity do
     end
   end
 
+  @spec expose(atom, Keyword.t, Macro.t) :: Macro.t
   defmacro expose(attr_name, options, do_func) when is_atom(attr_name) and is_list(options) do
     options = Macro.escape(options)
     quote do
@@ -38,16 +49,16 @@ defmodule Maru.Entity do
     end
   end
 
+  @spec parse(Keyword.t) :: Maru.Entity.Struct.Exposure.t
   def parse(options) do
     pipeline = [
       :attr_name, :serializer, :if_func, :do_func
     ]
     accumulator = %{
       options:     options,
-      information: %Information{}, # TODO
       runtime:     quote do %Runtime{} end,
     }
-    Enum.reduce(pipeline, accumulator, &do_parse/2)
+    Enum.reduce(pipeline, accumulator, &do_parse/2) #|> Map.drop(:options)
   end
 
   defp do_parse(:attr_name, %{options: options, runtime: runtime}) do
@@ -156,7 +167,6 @@ defmodule Maru.Entity do
     }
   end
 
-
   defmacro __before_compile__(env) do
     exposures =
       Module.get_attribute(env.module, :exposures)
@@ -164,10 +174,12 @@ defmodule Maru.Entity do
         e.runtime
       end)
     quote do
+      @spec __exposures__ :: list(Runtime.t)
       def __exposures__ do
         unquote(exposures)
       end
 
+      @spec __exposures__ :: list(Entity.instance, Entity.options) :: Maru.Entity.object
       def serialize(instance, options \\ %{}) do
         %Serializer{
           module:  __MODULE__,

@@ -1,16 +1,33 @@
 alias Maru.Entity.Struct.Batch
 alias Maru.Entity.Struct.Instance
 alias Maru.Entity.Struct.Serializer
+alias Maru.Entity.Struct.Exposure
 
 defmodule Maru.Entity.Runtime do
+  @moduledoc """
+  """
+
+  @type id    :: reference
+  @type state :: %{
+    data:      :ets.tab,
+    old_link:  :ets.tab,
+    new_link:  :ets.tab,
+    old_batch: :ets.tab,
+    new_batch: :ets.tab,
+    max_concurrency: pos_integer,
+  }
+
+
+  @spec serialize(Serializer.t, Maru.Entity.instance) :: Maru.Entity.object
   def serialize(serializer, instance) do
     state = init()
     id = save_link(serializer, instance, state.old_link)
-    do_loop(state)
+    state = do_loop(state)
     terminate(id, serializer.type, state)
   end
 
 
+  @spec init :: state
   defp init do
     %{ data:      create_ets(:duplicate_bag),
        old_link:  create_ets(:duplicate_bag),
@@ -22,6 +39,7 @@ defmodule Maru.Entity.Runtime do
   end
 
 
+  @spec terminate(id, Maru.Entity.one_or_list, state) :: Maru.Entity.object
   defp terminate(id, type, state) do
     :ets.delete(state.old_link)
     :ets.delete(state.new_link)
@@ -34,6 +52,7 @@ defmodule Maru.Entity.Runtime do
   end
 
 
+  @spec create_ets(:set | :duplicate_bag) :: :ets.tab
   defp create_ets(type) when type in [:set, :duplicate_bag] do
     :ets.new(:maru_entity_serializer, [
       type, :public, heir: :none, write_concurrency: true, read_concurrency: true
@@ -41,12 +60,12 @@ defmodule Maru.Entity.Runtime do
   end
 
 
+  @spec save_link(Serializer.t, Maru.Entity.instance, :ets.tab) :: id
   defp save_link(%Serializer{type: :one}=s, instance, ets) do
     id = make_ref()
     :ets.insert(ets, {id, s, instance})
     id
   end
-
 
   defp save_link(%Serializer{type: :list}=s, instances, ets) do
     id = make_ref()
@@ -57,6 +76,7 @@ defmodule Maru.Entity.Runtime do
   end
 
 
+  @spec do_build(id, Maru.Entity.one_or_list, :ets.tab) :: Maru.Entity.object
   defp do_build(id, :one, ets) do
     [{_id, i}] = :ets.lookup(ets, id)
     do_build_one(i, ets)
@@ -70,14 +90,16 @@ defmodule Maru.Entity.Runtime do
   end
 
 
+  @spec do_build_one(Instance.t, :ets.tab) :: Maru.Entity.object
   defp do_build_one(%Instance{data: data, links: []}, _ets), do: data
   defp do_build_one(%Instance{data: data, links: links}, ets) do
     Enum.reduce(links, data, fn {attr_name, type, id}, acc ->
-        put_in(acc, attr_name, do_build(id, type, ets))
+      put_in(acc, attr_name, do_build(id, type, ets))
     end)
   end
 
 
+  @spec do_loop(state) :: state
   defp do_loop(state) do
     unless :ets.info(state.old_link)[:size] == 0 do
       do_loop_link_monitor(state)
@@ -104,6 +126,7 @@ defmodule Maru.Entity.Runtime do
   end
 
 
+  @spec do_loop_link_monitor(state) :: :ok
   defp do_loop_link_monitor(state) do
     {pid, ref} = Process.spawn(fn -> do_loop_link(state) end, [:monitor])
     receive do
@@ -133,9 +156,12 @@ defmodule Maru.Entity.Runtime do
         {:DOWN, _ref, :process, _pid, :normal} -> :ok
       end
     end
+
+    :ok
   end
 
 
+  @spec do_loop_batch(state) :: :ok
   defp do_loop_batch(state) do
     data =
       :ets.foldl(fn {id, serializer, %Batch{module: module, key: key}}, acc ->
@@ -175,19 +201,24 @@ defmodule Maru.Entity.Runtime do
   end
 
 
+  @spec do_serialize({id, Serializer.t | nil, Maru.Entity.instance}, state) :: :ok
   def do_serialize({id, nil, instance}, state) do
     result = %Instance{data: instance, links: []}
     :ets.insert(state.data, {id, result})
+    :ok
   end
 
   def do_serialize({id, serializer, instance}, state) do
     exposures = serializer.module.__exposures__
     result = do_serialize(exposures, %Instance{}, instance, serializer.options, state)
     :ets.insert(state.data, {id, result})
+    :ok
   rescue
     e -> exit({:error, e, System.stacktrace()})
   end
 
+
+  @spec do_serialize(list(Exposure.Runtime.t), Maru.Entity.object, Maru.Entity.instance, Maru.Entity.options, state) :: Maru.Entity.object
   defp do_serialize([], result, _instance, _options, _state), do: result
   defp do_serialize([h | t], result, instance, options, state) do
     result =
@@ -200,6 +231,7 @@ defmodule Maru.Entity.Runtime do
   end
 
 
+  @spec do_update(Serializer.t | nil, Batch.t | Maru.Entity.instance, Exposure.Runtime.t, Maru.Entity.instance, Maru.Entity.options, state) :: Maru.Entity.instance
   defp do_update(nil, %Batch{}=batch, field, result, _options, state) do
     id = make_ref()
     :ets.insert(state.new_batch, {id, nil, batch})
