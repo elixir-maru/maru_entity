@@ -215,5 +215,20 @@ defmodule Maru.EntityTest do
       end
     end
 
+    test "correct order under concurrency" do
+      defmodule PostEntity6 do
+        use Maru.Entity
+
+        expose :id, [], fn(instance, _) ->
+          id = Map.get(instance, :id)
+          :timer.sleep(id * 100)
+          id
+        end
+      end
+
+      assert [%{id: 1}, %{id: 2}] = PostEntity6.serialize([%{id: 1}, %{id: 2}])
+      assert [%{id: 2}, %{id: 1}] = PostEntity6.serialize([%{id: 2}, %{id: 1}])
+    end
+
   end
 end

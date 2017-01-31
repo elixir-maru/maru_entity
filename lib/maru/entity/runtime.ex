@@ -63,28 +63,33 @@ defmodule Maru.Entity.Runtime do
   @spec save_link(Serializer.t, Maru.Entity.instance, :ets.tab) :: id
   defp save_link(%Serializer{type: :one}=s, instance, ets) do
     id = make_ref()
-    :ets.insert(ets, {id, s, instance})
+    :ets.insert(ets, {id, s, instance, nil})
     id
   end
 
   defp save_link(%Serializer{type: :list}=s, instances, ets) do
     id = make_ref()
-    Enum.each(instances, fn i ->
-      :ets.insert(ets, {id, s, i})
+    instances
+    |> Stream.with_index
+    |> Enum.each(fn {i, idx} ->
+      :ets.insert(ets, {id, s, i, idx})
     end)
     id
   end
 
 
-  @spec do_build(id, Maru.Entity.one_or_list, :ets.tab) :: Maru.Entity.object
+  @spec do_build(id, Maru.Entity.one_or_list, :ets.tab) :: Maru.Entity.object | [Maru.Entity.object]
   defp do_build(id, :one, ets) do
-    [{_id, i}] = :ets.lookup(ets, id)
+    [{_id, i, nil}] = :ets.lookup(ets, id)
     do_build_one(i, ets)
   end
 
   defp do_build(id, :list, ets) do
     :ets.lookup(ets, id)
-    |> Enum.map(fn {_id, i} ->
+    |> Enum.sort(fn {_, _, idx1}, {_, _, idx2} ->
+      idx1 < idx2
+    end)
+    |> Enum.map(fn {_id, i, _idx} ->
       do_build_one(i, ets)
     end)
   end
@@ -183,33 +188,36 @@ defmodule Maru.Entity.Runtime do
 
     :ets.foldl(fn
       {id, %Serializer{type: :list}=s, %Batch{module: module, key: key}}, _ ->
-        data |> get_in([module, key]) |> Enum.each(fn instance ->
-          :ets.insert(state.old_link, {id, %{s | type: :one}, instance})
+        data
+        |> get_in([module, key])
+        |> Stream.with_index
+        |> Enum.each(fn {instance, idx} ->
+          :ets.insert(state.old_link, {id, %{s | type: :one}, instance, idx})
         end)
         :ok
       {id, %Serializer{type: :one}=s, %Batch{module: module, key: key}}, _ ->
         instance = get_in(data, [module, key])
-        :ets.insert(state.old_link, {id, s, instance})
+        :ets.insert(state.old_link, {id, s, instance, nil})
         :ok
       {id, nil, %Batch{module: module, key: key}}, _ ->
         instance = get_in(data, [module, key])
-        :ets.insert(state.old_link, {id, nil, instance})
+        :ets.insert(state.old_link, {id, nil, instance, nil})
         :ok
     end, :ok, state.old_batch)
   end
 
 
-  @spec do_serialize({id, Serializer.t | nil, Maru.Entity.instance}, state) :: :ok
-  def do_serialize({id, nil, instance}, state) do
+  @spec do_serialize({id, Serializer.t | nil, Maru.Entity.instance, integer}, state) :: :ok
+  def do_serialize({id, nil, instance, idx}, state) do
     result = %Instance{data: instance, links: []}
-    :ets.insert(state.data, {id, result})
+    :ets.insert(state.data, {id, result, idx})
     :ok
   end
 
-  def do_serialize({id, serializer, instance}, state) do
+  def do_serialize({id, serializer, instance, idx}, state) do
     exposures = serializer.module.__exposures__
     result = do_serialize(exposures, %Instance{}, instance, serializer.options, state)
-    :ets.insert(state.data, {id, result})
+    :ets.insert(state.data, {id, result, idx})
     :ok
   rescue
     e -> exit({:error, e, System.stacktrace()})
