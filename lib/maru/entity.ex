@@ -58,7 +58,7 @@ defmodule Maru.Entity do
       options:     options,
       runtime:     quote do %Runtime{} end,
     }
-    Enum.reduce(pipeline, accumulator, &do_parse/2) #|> Map.drop(:options)
+    Enum.reduce(pipeline, accumulator, &do_parse/2) |> Map.drop([:options])
   end
 
   defp do_parse(:attr_name, %{options: options, runtime: runtime}) do
