@@ -1,7 +1,9 @@
 Maru.Entity
 ==========
 
-Elixir copy of [grape-entity](https://github.com/intridea/grape-entity) for serializing objects.
+> Elixir copy of [grape-entity](https://github.com/intridea/grape-entity) for serializing objects.
+
+[![Build Status](https://img.shields.io/travis/elixir-maru/maru_entity.svg?style=flat-square)](https://travis-ci.org/elixir-maru/maru_entity)
 
 ### Usage:
 
