@@ -4,7 +4,7 @@ defmodule MaruEntity.Mixfile do
   def project do
     [ app: :maru_entity,
       version: "0.1.2",
-      elixir: "~> 1.0",
+      elixir: "~> 1.3",
       description: "Elixir copy of grape-entity",
       build_embedded: Mix.env == :prod,
       start_permanent: Mix.env == :prod,
