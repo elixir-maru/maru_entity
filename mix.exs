@@ -12,6 +12,7 @@ defmodule MaruEntity.Mixfile do
       description: "An API focused facade that sits on top of an object model inspired by grape-entity",
       source_url: "https://github.com/elixir-maru/maru_entity",
       package: package(),
+      test_coverage: [tool: ExCoveralls],
       docs: [
         extras: ["README.md"],
         main: "readme",
@@ -25,7 +26,8 @@ defmodule MaruEntity.Mixfile do
   end
 
   defp deps do
-    [ {:ex_doc, "~> 0.12", only: :docs},
+    [ { :ex_doc,      "~> 0.12", only: :docs },
+      { :excoveralls, "~> 0.5",  only: :test },
     ]
   end
 

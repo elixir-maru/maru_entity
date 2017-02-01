@@ -4,7 +4,7 @@ Maru.Entity
 > Elixir copy of [grape-entity](https://github.com/intridea/grape-entity) for serializing objects.
 
 [![Build Status](https://img.shields.io/travis/elixir-maru/maru_entity.svg?style=flat-square)](https://travis-ci.org/elixir-maru/maru_entity)
-
+[![Coveralls](https://img.shields.io/coveralls/elixir-maru/maru_entity.svg?style=flat-square)](https://coveralls.io/github/elixir-maru/maru_entity)
 ### Usage:
 
 ```elixir

@@ -15,3 +15,7 @@ notifications:
     - self@falood.me
 before_script:
   - mix deps.get --only test
+script:
+  - mix coveralls.travis
+env:
+  - MIX_ENV=test
