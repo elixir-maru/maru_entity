@@ -179,13 +179,13 @@ defmodule Maru.Entity do
         unquote(exposures)
       end
 
-      @spec __exposures__ :: list(Entity.instance, Entity.options) :: Maru.Entity.object
-      def serialize(instance, options \\ %{}) do
+      @spec __exposures__ :: list(Entity.instance, Entity.options, Keyword.t) :: Maru.Entity.object
+      def serialize(instance, options \\ %{}, entity_options \\ []) do
         %Serializer{
           module:  __MODULE__,
           type:    is_list(instance) && :list || :one,
           options: options,
-        } |> Maru.Entity.Runtime.serialize(instance)
+        } |> Maru.Entity.Runtime.serialize(instance, entity_options)
       end
     end
   end

@@ -230,5 +230,21 @@ defmodule Maru.EntityTest do
       assert [%{id: 2}, %{id: 1}] = PostEntity6.serialize([%{id: 2}, %{id: 1}])
     end
 
+    test "custom max_concurrency" do
+      defmodule PostEntity7 do
+        use Maru.Entity
+
+        expose :id, [], fn(instance, _) ->
+          :timer.sleep(1)
+          Map.get(instance, :id)
+        end
+      end
+
+      posts = Enum.map(1..1000, &%{id: &1})
+      assert {t1, ^posts} = :timer.tc(PostEntity7, :serialize, [posts, %{}, [max_concurrency: 4]])
+      assert {t2, ^posts} = :timer.tc(PostEntity7, :serialize, [posts, %{}, [max_concurrency: 10]])
+      assert t1 > t2
+    end
+
   end
 end

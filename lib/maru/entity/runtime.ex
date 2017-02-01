@@ -18,23 +18,24 @@ defmodule Maru.Entity.Runtime do
   }
 
 
-  @spec serialize(Serializer.t, Maru.Entity.instance) :: Maru.Entity.object
-  def serialize(serializer, instance) do
-    state = init()
+  @spec serialize(Serializer.t, Maru.Entity.instance, Keyword.t) :: Maru.Entity.object
+  def serialize(serializer, instance, options) do
+    state = init(options)
     id = save_link(serializer, instance, state.old_link)
     state = do_loop(state)
     terminate(id, serializer.type, state)
   end
 
 
-  @spec init :: state
-  defp init do
+  @spec init(Keyword.t) :: state
+  defp init(options) do
+    max_concurrency = Keyword.get(options, :max_concurrency, 4)
     %{ data:      create_ets(:duplicate_bag),
        old_link:  create_ets(:duplicate_bag),
        new_link:  create_ets(:duplicate_bag),
        old_batch: create_ets(:set),
        new_batch: create_ets(:set),
-       max_concurrency: 4,
+       max_concurrency: max_concurrency,
     }
   end
 
