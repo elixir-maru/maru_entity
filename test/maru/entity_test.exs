@@ -235,15 +235,16 @@ defmodule Maru.EntityTest do
         use Maru.Entity
 
         expose :id, [], fn(instance, _) ->
-          :timer.sleep(1)
+          :timer.sleep(2)
           Map.get(instance, :id)
         end
       end
 
-      posts = Enum.map(1..1000, &%{id: &1})
-      assert {t1, ^posts} = :timer.tc(PostEntity7, :serialize, [posts, %{}, [max_concurrency: 4]])
-      assert {t2, ^posts} = :timer.tc(PostEntity7, :serialize, [posts, %{}, [max_concurrency: 10]])
-      assert t1 > t2
+      posts = Enum.map(1..100, &%{id: &1})
+      assert ^posts = PostEntity7.serialize(posts, %{}, [max_concurrency: 1])
+      assert ^posts = PostEntity7.serialize(posts, %{}, [max_concurrency: 2])
+      assert ^posts = PostEntity7.serialize(posts, %{}, [max_concurrency: 10])
+      assert ^posts = PostEntity7.serialize(posts, %{}, [max_concurrency: 200])
     end
 
   end
