@@ -247,5 +247,49 @@ defmodule Maru.EntityTest do
       assert ^posts = PostEntity7.serialize(posts, %{}, [max_concurrency: 200])
     end
 
+    test "middleman trap parent exit" do
+      defmodule PostEntity8 do
+        use Maru.Entity
+
+        expose :id
+        expose :author, using: Maru.EntityTest.AuthorEntity6
+      end
+
+      defmodule AuthorEntity6 do
+        use Maru.Entity
+
+        expose :id, [], fn(_instance, _) ->
+          # worker should never trap exit in practice
+          # this is for test only
+          Process.flag(:trap_exit, true)
+          send(:test_runner, :worker_ready)
+          receive do
+            {:EXIT, _pid, :kill} ->
+              # expected kill of the middleman process
+              send(:test_runner, :worker_killed)
+              :ok
+          end
+        end
+      end
+
+      Process.register(self, :test_runner)
+      wait = fn(msg) ->
+        receive do
+          ^msg ->
+            :ok
+        after
+          1_000 ->
+            raise {"TIMEOUT", msg}
+        end
+      end
+      post = %{id: 100, author_id: 1}
+      pid = Process.spawn(fn ->
+              PostEntity8.serialize(post)
+            end, [])
+      wait.(:worker_ready)
+      Process.exit(pid, :kill)
+      wait.(:worker_killed)
+    end
+
   end
 end
