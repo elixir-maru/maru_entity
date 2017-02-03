@@ -37,7 +37,7 @@ defmodule PostEntity do
   expose :disabled, if: fn(post, _options) -> post.is_disabled end
   expose :active, unless: fn(post, _options) -> post.is_disabled end
 
-  expose :comments, using: List[PostEntity], fn(post, _options) ->
+  expose :comments, using: List[CommentEntity], fn(post, _options) ->
     query =
       from c in Comment,
         where: c.post_id == post.id,
@@ -64,7 +64,7 @@ defmodule AuthorEntity do
 end
 
 defmodule CommentAuthor.BatchHelper do
-  def key(comment, _optiosn) do
+  def key(comment, _options) do
     comment.author_id
   end
 
