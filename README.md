@@ -5,6 +5,7 @@ Maru.Entity
 
 [![Build Status](https://img.shields.io/travis/elixir-maru/maru_entity.svg?style=flat-square)](https://travis-ci.org/elixir-maru/maru_entity)
 [![Coveralls](https://img.shields.io/coveralls/elixir-maru/maru_entity.svg?style=flat-square)](https://coveralls.io/github/elixir-maru/maru_entity)
+
 ### Usage:
 
 ```elixir
@@ -57,4 +58,6 @@ defmodule CommentAuthor.BatchHelper do
     Repo.all(query) |> Map.new(&{&1.id, &1})
   end
 end
+
+PostEntity.serialize(posts)
 ```

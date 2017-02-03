@@ -3,7 +3,49 @@ alias Maru.Entity.Struct.Serializer
 alias Maru.Entity.Struct.Exposure.Runtime
 
 defmodule Maru.Entity do
-  @moduledoc """
+  @moduledoc ~S"""
+
+  ## Defining Entities
+
+  ### Basic Exposure
+
+      expose :id
+
+  expose with `Map.get(instance, :id)`
+
+  `%{id: 1}` => `%{id: 1}`
+
+  ### Exposing with a Presenter
+
+  expose field with another entity and another key:
+
+      expose :response, source: :reply, using: Reply.Entity
+
+  `%{reply: reply}` => `%{response: Reply.Entity.serializer(reploy)}`
+
+  expose list-type field with another entity:
+
+      expose :replies, using: List[Reply.Entity]
+
+  `%{replies: [reply1, reply2]}` => `%{replies: [Reply.Entity.serializer(reply1), Reply.Entity.serializer(reply2)]}`
+
+  ### Conditional Exposure
+
+  Use `:if` or `:unless` to expose fields conditionally.
+
+      expose :username, if: fn(user, _options) -> user[:public?] end
+
+  `%{username: "user1", public?: true}` => `%{username: "user1"}`
+
+  `%{username: "user1", public?: false}` => `%{}`
+
+  ### Custom Present Function
+
+      expose :username, [], fn user, _options ->
+        "#{user[:first_name]} #{user[:last_name]}"
+      end
+
+  `%{first_name: "X", last_name: "Y"}` => `%{username: "X Y"}`
   """
 
   @type instance    :: map
@@ -21,14 +63,18 @@ defmodule Maru.Entity do
     end
   end
 
-  @spec expose(atom) :: Macro.t
+  @doc """
+  Expose a field with Map.get.
+  """
   defmacro expose(attr_name) when is_atom(attr_name) do
     quote do
       @exposures(parse([attr_name: unquote(attr_name)]))
     end
   end
 
-  @spec expose(atom, Keyword.t) :: Macro.t
+  @doc """
+  Expose a field with Map.get and options.
+  """
   defmacro expose(attr_name, options) when is_atom(attr_name) and is_list(options) do
     options = Macro.escape(options)
     quote do
@@ -38,7 +84,9 @@ defmodule Maru.Entity do
     end
   end
 
-  @spec expose(atom, Keyword.t, Macro.t) :: Macro.t
+  @doc """
+  Expose a field with custom function and options.
+  """
   defmacro expose(attr_name, options, do_func) when is_atom(attr_name) and is_list(options) do
     options = Macro.escape(options)
     quote do
@@ -174,12 +222,18 @@ defmodule Maru.Entity do
         e.runtime
       end)
     quote do
+      @doc """
+      Return list of exposures.
+      """
       @spec __exposures__ :: list(Runtime.t)
       def __exposures__ do
         unquote(exposures)
       end
 
-      @spec __exposures__ :: list(Entity.instance, Entity.options, Keyword.t) :: Maru.Entity.object
+      @doc """
+      Serialize given instance into an object.
+      """
+      @spec serialize(Entity.instance, Entity.options, Keyword.t) :: Maru.Entity.object
       def serialize(instance, options \\ %{}, entity_options \\ []) do
         %Serializer{
           module:  __MODULE__,

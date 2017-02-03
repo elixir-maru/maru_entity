@@ -5,6 +5,7 @@ alias Maru.Entity.Struct.Exposure
 
 defmodule Maru.Entity.Runtime do
   @moduledoc """
+  Serialize an instance concurrently.
   """
 
   @type id    :: reference
@@ -18,6 +19,7 @@ defmodule Maru.Entity.Runtime do
   }
 
 
+  @doc false
   @spec serialize(Serializer.t, Maru.Entity.instance, Keyword.t) :: Maru.Entity.object
   def serialize(serializer, instance, options) do
     state = init(options)
@@ -208,6 +210,7 @@ defmodule Maru.Entity.Runtime do
   end
 
 
+  @doc false
   @spec do_serialize({id, Serializer.t | nil, Maru.Entity.instance, integer}, state) :: :ok
   def do_serialize({id, nil, instance, idx}, state) do
     result = %Instance{data: instance, links: []}
