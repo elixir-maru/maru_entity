@@ -1,12 +1,30 @@
 Maru.Entity
 ==========
 
-> Concurrent serializer inspired by [grape-entity](https://github.com/intridea/grape-entity).
+> Concurrent serializer inspired by [grape-entity](https://github.com/ruby-grape/grape-entity).
 
 [![Build Status](https://img.shields.io/travis/elixir-maru/maru_entity.svg?style=flat-square)](https://travis-ci.org/elixir-maru/maru_entity)
 [![Coveralls](https://img.shields.io/coveralls/elixir-maru/maru_entity.svg?style=flat-square)](https://coveralls.io/github/elixir-maru/maru_entity)
 
-### Usage:
+### Usage
+
+#### Installation
+
+1. Add `maru_entity` to your list of dependencies in `mix.exs`:
+
+    ```
+    def deps do
+      [{:maru_entity, "~> 0.2.0"}]
+    end
+    ```
+
+2. Config `:default_max_concurrency`:
+
+    ```
+    config :maru_entity, default_max_concurrency: 4
+    ```
+
+####  Example
 
 ```elixir
 defmodule PostEntity do

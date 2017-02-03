@@ -31,7 +31,7 @@ defmodule Maru.Entity.Runtime do
 
   @spec init(Keyword.t) :: state
   defp init(options) do
-    max_concurrency = Keyword.get(options, :max_concurrency, 4)
+    max_concurrency = Application.get_env(:maru_entity, :default_max_concurrency) || Keyword.get(options, :max_concurrency, 4)
     %{ data:      create_ets(:duplicate_bag),
        old_link:  create_ets(:duplicate_bag),
        new_link:  create_ets(:duplicate_bag),
