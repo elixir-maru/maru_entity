@@ -136,31 +136,45 @@ defmodule Maru.Entity.Runtime do
 
   @spec do_loop_link_monitor(state) :: :ok
   defp do_loop_link_monitor(state) do
-    {pid, ref} = Process.spawn(fn -> do_loop_link(state) end, [:monitor])
+    parent = self
+    {pid, ref} = Process.spawn(fn -> do_loop_link(parent, state) end, [:monitor])
     receive do
       {:DOWN, ^ref, :process, ^pid, :normal} -> :ok
-      {:DOWN, ^ref, :process, ^pid, {:error, exception, stack}} ->
+      {:DOWN, ^ref, :process, ^pid, reason} ->
+        {:error, exception, stack} = reason # assert
         :erlang.raise(:error, exception, stack)
     end
   end
 
-  defp do_loop_link(state) do
+  defp do_loop_link(parent, state) do
+    Process.flag(:trap_exit, true)
+    parent_ref = Process.monitor(parent)
+    sync =
+      fn(continue) ->
+        receive do
+          {:EXIT, _pid, :normal} ->
+            # a worker exited normally, continue
+            continue.()
+          {:EXIT, _pid, reason} ->
+            # a worker exited abnormally, kill self
+            # propagate error to parent
+            exit(reason)
+          {:DOWN, ^parent_ref, :process, ^parent, _} ->
+            # parent is down, kill self
+            exit(:kill)
+        end
+      end
     {_, rest} = :ets.foldl(fn
       term, {0, rest} ->
-        receive do
-          {:DOWN, _ref, :process, _pid, :normal} ->
-            Process.spawn(__MODULE__, :do_serialize, [term, state], [:monitor, :link])
-        end
+        sync.(fn -> Process.spawn(__MODULE__, :do_serialize, [term, state], [:link]) end)
         {0, rest}
       term, {num, rest} ->
-        Process.spawn(__MODULE__, :do_serialize, [term, state], [:monitor, :link])
+        Process.spawn(__MODULE__, :do_serialize, [term, state], [:link])
         {num - 1, rest + 1}
     end, {state.max_concurrency, 0}, state.old_link)
 
     for _ <- 1..rest do
-      receive do
-        {:DOWN, _ref, :process, _pid, :normal} -> :ok
-      end
+      sync.(fn -> :ok end)
     end
 
     :ok
