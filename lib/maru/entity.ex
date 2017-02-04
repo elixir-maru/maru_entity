@@ -21,7 +21,7 @@ defmodule Maru.Entity do
 
       expose :response, source: :reply, using: Reply.Entity
 
-  `%{reply: reply}` => `%{response: Reply.Entity.serializer(reploy)}`
+  `%{reply: reply}` => `%{response: Reply.Entity.serializer(reply)}`
 
   expose list-type field with another entity:
 
