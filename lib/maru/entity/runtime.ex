@@ -136,16 +136,17 @@ defmodule Maru.Entity.Runtime do
 
   @spec do_loop_link_monitor(state) :: :ok
   defp do_loop_link_monitor(state) do
-    parent = self
+    parent = self()
     {pid, ref} = Process.spawn(fn -> do_loop_link(parent, state) end, [:monitor])
     receive do
       {:DOWN, ^ref, :process, ^pid, :normal} -> :ok
       {:DOWN, ^ref, :process, ^pid, reason} ->
-        {:error, exception, stack} = reason # assert
+        {:error, exception, stack} = reason
         :erlang.raise(:error, exception, stack)
     end
   end
 
+  @spec do_loop_link(pid, state) :: :ok
   defp do_loop_link(parent, state) do
     Process.flag(:trap_exit, true)
     parent_ref = Process.monitor(parent)
@@ -153,14 +154,10 @@ defmodule Maru.Entity.Runtime do
       fn(continue) ->
         receive do
           {:EXIT, _pid, :normal} ->
-            # a worker exited normally, continue
             continue.()
           {:EXIT, _pid, reason} ->
-            # a worker exited abnormally, kill self
-            # propagate error to parent
             exit(reason)
           {:DOWN, ^parent_ref, :process, ^parent, _} ->
-            # parent is down, kill self
             exit(:kill)
         end
       end

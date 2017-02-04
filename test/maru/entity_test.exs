@@ -252,10 +252,10 @@ defmodule Maru.EntityTest do
         use Maru.Entity
 
         expose :id
-        expose :author, using: Maru.EntityTest.AuthorEntity6
+        expose :author, using: Maru.EntityTest.AuthorEntity8
       end
 
-      defmodule AuthorEntity6 do
+      defmodule AuthorEntity8 do
         use Maru.Entity
 
         expose :id, [], fn(_instance, _) ->
@@ -272,23 +272,15 @@ defmodule Maru.EntityTest do
         end
       end
 
-      Process.register(self, :test_runner)
-      wait = fn(msg) ->
-        receive do
-          ^msg ->
-            :ok
-        after
-          1_000 ->
-            raise {"TIMEOUT", msg}
-        end
-      end
+      Process.register(self(), :test_runner)
       post = %{id: 100, author_id: 1}
-      pid = Process.spawn(fn ->
-              PostEntity8.serialize(post)
-            end, [])
-      wait.(:worker_ready)
+      pid =
+        Process.spawn(fn ->
+          PostEntity8.serialize(post)
+        end, [])
+      assert_receive :worker_ready, 1_000
       Process.exit(pid, :kill)
-      wait.(:worker_killed)
+      assert_receive :worker_killed, 1_000
     end
 
   end
