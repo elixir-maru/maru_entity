@@ -10,7 +10,7 @@
     `expose :posts, with: PostEntity` should be `expose :posts, with: List[PostEntity]`
 
 
-## v0.2.0-dev
+## v0.2.0 (2017-02-04)
 * Enhancements
   * concurrently serialize
   * solve the N + 1 Problem
