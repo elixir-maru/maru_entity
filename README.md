@@ -26,6 +26,8 @@ Maru.Entity
 
 ####  Example
 
+check [here](https://github.com/elixir-maru/maru_examples/blob/master/entity) if you want a full example with `models` and `serializers`.
+
 ```elixir
 defmodule PostEntity do
   use Maru.Entity
