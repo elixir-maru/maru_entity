@@ -203,7 +203,8 @@ defmodule Maru.Entity.Runtime do
     :ets.foldl(fn
       {id, %Serializer{type: :list}=s, %Batch{module: module, key: key}}, _ ->
         data
-        |> get_in([module, key])
+        |> Map.get(module, %{})
+        |> Map.get(key, [])
         |> Stream.with_index
         |> Enum.each(fn {instance, idx} ->
           :ets.insert(state.old_link, {id, %{s | type: :one}, instance, idx})

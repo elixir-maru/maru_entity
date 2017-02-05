@@ -150,6 +150,7 @@ defmodule Maru.EntityTest do
         end
 
         def resolve(keys) do
+          [_ | keys] = keys
           for id <- keys, into: %{} do
             {id, [%{id: id, name: "Author1_#{id}"}, %{id: id, name: "Author2_#{id}"}]}
           end
@@ -158,7 +159,7 @@ defmodule Maru.EntityTest do
 
       posts = [%{id: 100, author_id: 1}, %{id: 110, author_id: 3}, %{id: 130, author_id: 7}]
       assert [
-        %{id: 100, author: [%{id: 1, name: "Author1_1"}, %{id: 1, name: "Author2_1"}]},
+        %{id: 100, author: []},
         %{id: 110, author: [%{id: 3, name: "Author1_3"}, %{id: 3, name: "Author2_3"}]},
         %{id: 130, author: [%{id: 7, name: "Author1_7"}, %{id: 7, name: "Author2_7"}]},
       ] = PostEntity3.serialize(posts)

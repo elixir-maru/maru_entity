@@ -11,6 +11,8 @@
 
 
 ## v0.2.1-dev
+* Bugfix
+  * return `[]` instead of `nil` for batch  list
 
 ## v0.2.0 (2017-02-04)
 * Enhancements
