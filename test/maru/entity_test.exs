@@ -39,6 +39,10 @@ defmodule Maru.EntityTest do
     expose :post_count, [], fn(author, _options) ->
       length(author.posts)
     end
+
+    expose :option, [], fn(_, options) ->
+      options[:option]
+    end
   end
 
   describe "present" do
@@ -70,12 +74,13 @@ defmodule Maru.EntityTest do
       post2 = %{id: 2, title: "My another title", body: "text body"}
       author = %{name: "Teodor Pripoae", posts: [post1, post2]}
       expected = %{name: "Teodor Pripoae",
+                   option: 1,
                    post_count: 2,
                    posts: [%{id: 1, title: "My other title", content: "<b>html body</b>"},
                            %{id: 2, title: "My another title", content: "text body"}]}
 
-      assert AuthorEntity.serialize(author) == expected
-      assert AuthorEntity.serialize([author]) == [expected]
+      assert AuthorEntity.serialize(author, %{option: 1}) == expected
+      assert AuthorEntity.serialize([author], %{option: 1}) == [expected]
     end
 
     test "does not show post if nil " do
@@ -106,7 +111,9 @@ defmodule Maru.EntityTest do
         use Maru.Entity
 
         expose :id
-        expose :name
+        expose :name, [], fn instance, options ->
+          "#{instance[:name]}_#{options[:option]}"
+        end
       end
 
       defmodule AuthorEntity2.BatchHelper do
@@ -123,10 +130,10 @@ defmodule Maru.EntityTest do
 
       posts = [%{id: 100, author_id: 1}, %{id: 110, author_id: 3}, %{id: 130, author_id: 7}]
       assert [
-        %{id: 100, author: %{id: 1, name: "Author1"}},
-        %{id: 110, author: %{id: 3, name: "Author3"}},
-        %{id: 130, author: %{id: 7, name: "Author7"}},
-      ] = PostEntity2.serialize(posts)
+        %{id: 100, author: %{id: 1, name: "Author1_x"}},
+        %{id: 110, author: %{id: 3, name: "Author3_x"}},
+        %{id: 130, author: %{id: 7, name: "Author7_x"}},
+      ] = PostEntity2.serialize(posts, %{option: "x"})
     end
 
     test "batch helper for list of objects" do
@@ -142,6 +149,9 @@ defmodule Maru.EntityTest do
 
         expose :id
         expose :name
+        expose :option, [], fn(_, options) ->
+          options[:option]
+        end
       end
 
       defmodule AuthorEntity3.BatchHelper do
@@ -160,9 +170,9 @@ defmodule Maru.EntityTest do
       posts = [%{id: 100, author_id: 1}, %{id: 110, author_id: 3}, %{id: 130, author_id: 7}]
       assert [
         %{id: 100, author: []},
-        %{id: 110, author: [%{id: 3, name: "Author1_3"}, %{id: 3, name: "Author2_3"}]},
-        %{id: 130, author: [%{id: 7, name: "Author1_7"}, %{id: 7, name: "Author2_7"}]},
-      ] = PostEntity3.serialize(posts)
+        %{id: 110, author: [%{id: 3, name: "Author1_3", option: 1}, %{id: 3, name: "Author2_3", option: 1}]},
+        %{id: 130, author: [%{id: 7, name: "Author1_7", option: 1}, %{id: 7, name: "Author2_7", option: 1}]},
+      ] = PostEntity3.serialize(posts, %{option: 1})
     end
 
     test "batch helper for non-object value" do
