@@ -36,13 +36,16 @@ defmodule Maru.EntityTest do
     expose :name
     expose :posts, using: List[Maru.EntityTest.PostEntity]
 
-    expose :post_count, [], fn(author, _options) ->
-      length(author.posts)
-    end
+    expose :post_count, [], &do_post_count/2
 
     expose :option, [], fn(_, options) ->
       options[:option]
     end
+
+    def do_post_count(author, _options) do
+      length(author.posts)
+    end
+
   end
 
   describe "present" do
