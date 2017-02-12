@@ -57,6 +57,7 @@ defmodule Maru.Entity do
   defmacro __using__(_) do
     quote do
       Module.register_attribute __MODULE__, :exposures, accumulate: true
+      @group []
 
       import          unquote(__MODULE__)
       @before_compile unquote(__MODULE__)
@@ -68,7 +69,27 @@ defmodule Maru.Entity do
   """
   defmacro expose(attr_name) when is_atom(attr_name) do
     quote do
-      @exposures(parse([attr_name: unquote(attr_name)]))
+      @exposures parse(
+        [ attr_name: unquote(attr_name),
+          group: @group ++ [unquote(attr_name)],
+        ]
+      )
+    end
+  end
+
+  @doc """
+  Nested Exposure.
+  """
+  defmacro expose(group, [do: block]) when is_atom(group) do
+    quote do
+      group = @group
+      @group @group ++ [unquote(group)]
+      @exposures %{
+        options: [],
+        runtime: default_runtime(:group, @group),
+      }
+      unquote(block)
+      @group group
     end
   end
 
@@ -78,9 +99,12 @@ defmodule Maru.Entity do
   defmacro expose(attr_name, options) when is_atom(attr_name) and is_list(options) do
     options = Macro.escape(options)
     quote do
-      @exposures(unquote(options)
-      |> Keyword.put(:attr_name, unquote(attr_name))
-      |> parse)
+      @exposures(
+        unquote(options)
+        |> Keyword.put(:attr_name, unquote(attr_name))
+        |> Keyword.put(:group, @group ++ [unquote(attr_name)])
+        |> parse
+      )
     end
   end
 
@@ -90,10 +114,13 @@ defmodule Maru.Entity do
   defmacro expose(attr_name, options, do_func) when is_atom(attr_name) and is_list(options) do
     options = Macro.escape(options)
     quote do
-      @exposures(unquote(options)
-      |> Keyword.put(:attr_name, unquote(attr_name))
-      |> Keyword.put(:do_func, unquote(Macro.escape(do_func)))
-      |> parse)
+      @exposures(
+        unquote(options)
+        |> Keyword.put(:attr_name, unquote(attr_name))
+        |> Keyword.put(:group, @group ++ [unquote(attr_name)])
+        |> Keyword.put(:do_func, unquote(Macro.escape(do_func)))
+        |> parse
+      )
     end
   end
 
@@ -110,13 +137,14 @@ defmodule Maru.Entity do
   end
 
   defp do_parse(:attr_name, %{options: options, runtime: runtime}) do
+    group     = options |> Keyword.fetch!(:group)
     attr_name = options |> Keyword.fetch!(:attr_name)
     param_key = options |> Keyword.get(:source, attr_name)
-    options   = options |> Keyword.drop([:attr_name, :source]) |> Keyword.put(:param_key, param_key)
+    options   = options |> Keyword.drop([:attr_name, :group, :source]) |> Keyword.put(:param_key, param_key)
     %{ options: options,
        runtime: quote do
          %{ unquote(runtime) |
-            attr_name: [unquote(attr_name)], # TODO: use attr_group
+            attr_group: unquote(group),
           }
        end
     }
@@ -215,9 +243,24 @@ defmodule Maru.Entity do
     }
   end
 
+  @doc """
+  Generate default runtime struct.
+  """
+  @spec default_runtime(:atom, any()) :: Macro.t
+  def default_runtime(:group, group) do
+    quote do
+      %Runtime{
+        attr_group: unquote(group),
+        if_func: fn (_, _) -> true end,
+        do_func: fn (_, _) -> %{} end,
+      }
+    end
+  end
+
   defmacro __before_compile__(env) do
     exposures =
       Module.get_attribute(env.module, :exposures)
+      |> Enum.reverse
       |> Enum.map(fn(e) ->
         e.runtime
       end)

@@ -12,13 +12,13 @@ defmodule Maru.Entity.Struct.Exposure.Runtime do
   @moduledoc false
 
   @type t :: %__MODULE__{
-    attr_name:  list(atom | String.t),
+    attr_group: list(atom | String.t),
     if_func:    (Maru.Entity.instance, Keyword.t -> boolean),
     do_func:    (Maru.Entity.instance, Keyword.t -> any),
     serializer: Maru.Entity.Struct.Serializer.t | nil,
   }
 
-  defstruct attr_name:  nil,
+  defstruct attr_group: nil,
             if_func:    nil,
             do_func:    nil,
             serializer: nil

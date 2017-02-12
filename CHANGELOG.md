@@ -11,6 +11,8 @@
 
 
 ## v0.2.1-dev
+* Enhancements
+  * support nested exposure
 * Bugfix
   * return `[]` instead of `nil` for batch  list
 

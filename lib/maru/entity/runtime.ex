@@ -101,8 +101,8 @@ defmodule Maru.Entity.Runtime do
   @spec do_build_one(Instance.t, :ets.tab) :: Maru.Entity.object
   defp do_build_one(%Instance{data: data, links: []}, _ets), do: data
   defp do_build_one(%Instance{data: data, links: links}, ets) do
-    Enum.reduce(links, data, fn {attr_name, type, id}, acc ->
-      put_in(acc, attr_name, do_build(id, type, ets))
+    Enum.reduce(links, data, fn {attr_group, type, id}, acc ->
+      put_in(acc, attr_group, do_build(id, type, ets))
     end)
   end
 
@@ -258,8 +258,8 @@ defmodule Maru.Entity.Runtime do
     id = make_ref()
     :ets.insert(state.new_batch, {id, nil, batch})
     %Instance{
-      data: put_in(result.data, field.attr_name, nil),
-      links: [{field.attr_name, :one, id} | result.links],
+      data: put_in(result.data, field.attr_group, nil),
+      links: [{field.attr_group, :one, id} | result.links],
     }
   end
 
@@ -268,14 +268,14 @@ defmodule Maru.Entity.Runtime do
     s = %{serializer | options: options}
     :ets.insert(state.new_batch, {id, s, batch})
     %Instance{
-      data: put_in(result.data, field.attr_name, nil),
-      links: [{field.attr_name, serializer.type, id} | result.links],
+      data: put_in(result.data, field.attr_group, nil),
+      links: [{field.attr_group, serializer.type, id} | result.links],
     }
   end
 
   defp do_update(nil, instance, field, result, _options, _state) do
     %{ result |
-       data: put_in(result.data, field.attr_name, instance),
+       data: put_in(result.data, field.attr_group, instance),
     }
   end
 
@@ -283,8 +283,8 @@ defmodule Maru.Entity.Runtime do
     s = %{serializer | options: options}
     id = save_link(s, instance, state.new_link)
     %Instance{
-      data: put_in(result.data, field.attr_name, nil),
-      links: [{field.attr_name, serializer.type, id} | result.links],
+      data: put_in(result.data, field.attr_group, nil),
+      links: [{field.attr_group, serializer.type, id} | result.links],
     }
   end
 

@@ -13,6 +13,9 @@ defmodule Maru.EntityTest do
     use Maru.Entity
 
     expose :body
+    expose :nested do
+      expose :rename, source: :body
+    end
     expose :post, using: Maru.EntityTest.PostEntity
   end
 
@@ -66,7 +69,7 @@ defmodule Maru.EntityTest do
     test "serializes stuff using with" do
       post = %{id: 2, title: "My other title", body: "<b>html body</b>"}
       comment = %{body: "<b>comment body</b>", post: post}
-      expected = %{body: "<b>comment body</b>", post: %{id: 2, title: "My other title", content: "<b>html body</b>"}}
+      expected = %{body: "<b>comment body</b>", post: %{id: 2, title: "My other title", content: "<b>html body</b>"}, nested: %{rename: "<b>comment body</b>"}}
 
       assert CommentEntity.serialize(comment) == expected
       assert CommentEntity.serialize([comment]) == [expected]
