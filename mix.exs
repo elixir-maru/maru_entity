@@ -8,7 +8,7 @@ defmodule MaruEntity.Mixfile do
       build_embedded: Mix.env == :prod,
       start_permanent: Mix.env == :prod,
       deps: deps(),
-      description: "Concurrent serializer inspired by grape-entity.",
+      description: "Parallelizable serializer inspired by grape-entity.",
       source_url: "https://github.com/elixir-maru/maru_entity",
       package: package(),
       test_coverage: [tool: ExCoveralls],
