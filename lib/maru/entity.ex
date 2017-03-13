@@ -1,6 +1,6 @@
-alias Maru.Entity.Struct.Batch
-alias Maru.Entity.Struct.Serializer
-alias Maru.Entity.Struct.Exposure.Runtime
+alias Maru.Entity.Utils
+alias Maru.Entity.Struct.{Batch, Serializer, Exposure}
+alias Maru.Entity.Struct.Exposure.{Runtime, Information}
 
 defmodule Maru.Entity do
   @moduledoc ~S"""
@@ -56,11 +56,60 @@ defmodule Maru.Entity do
   @doc false
   defmacro __using__(_) do
     quote do
-      Module.register_attribute __MODULE__, :exposures, accumulate: true
+      Module.register_attribute __MODULE__, :exposures, persist: true
       @group []
+      @exposures []
 
       import          unquote(__MODULE__)
       @before_compile unquote(__MODULE__)
+    end
+  end
+
+  @doc """
+  Extend another entity.
+
+  Example:
+
+      defmodule UserData do
+        use Maru.Entity
+        expose :name
+        expose :address do
+          expose :address1
+          expose :address2
+          expose :address_state
+          expose :address_city
+        end
+        expose :email
+        expose :phone
+      end
+
+      defmodule MailingAddress do
+        use Maru.Entity
+        extend UserData, only: [
+          address: [:address1, :address2]
+        ]
+      end
+
+      defmodule BasicInfomation do
+        use Maru.Entity
+        extend UserData, except: [:address]
+      end
+  """
+  defmacro extend(module, options \\ []) do
+    func =
+      case {options[:only], options[:except]} do
+        {nil, nil}    -> quote do fn _ -> true end end
+        {nil, except} -> quote do fn i -> not Utils.attr_match?(i.information.attr_group, unquote(except)) end end
+        {only,  nil}  -> quote do fn i -> Utils.attr_match?(i.information.attr_group, unquote(only)) end end
+        {_, _}        -> raise ":only and :except conflict"
+      end
+    quote do
+      unquote(module).__info__(:attributes)
+      |> Keyword.get(:exposures)
+      |> Enum.filter(unquote(func))
+      |> Enum.each(fn exposure ->
+        @exposures @exposures ++ [exposure]
+      end)
     end
   end
 
@@ -69,11 +118,11 @@ defmodule Maru.Entity do
   """
   defmacro expose(attr_name) when is_atom(attr_name) do
     quote do
-      @exposures parse(
+      @exposures @exposures ++ [parse(
         [ attr_name: unquote(attr_name),
           group: @group ++ [unquote(attr_name)],
         ]
-      )
+      )]
     end
   end
 
@@ -84,10 +133,10 @@ defmodule Maru.Entity do
     quote do
       group = @group
       @group @group ++ [unquote(group)]
-      @exposures %{
-        options: [],
+      @exposures @exposures ++ [%Exposure{
         runtime: default_runtime(:group, @group),
-      }
+        information: %Information{attr_group: @group},
+      }]
       unquote(block)
       @group group
     end
@@ -99,12 +148,12 @@ defmodule Maru.Entity do
   defmacro expose(attr_name, options) when is_atom(attr_name) and is_list(options) do
     options = Macro.escape(options)
     quote do
-      @exposures(
+      @exposures @exposures ++ [
         unquote(options)
         |> Keyword.put(:attr_name, unquote(attr_name))
         |> Keyword.put(:group, @group ++ [unquote(attr_name)])
         |> parse
-      )
+      ]
     end
   end
 
@@ -114,29 +163,30 @@ defmodule Maru.Entity do
   defmacro expose(attr_name, options, do_func) when is_atom(attr_name) and is_list(options) do
     options = Macro.escape(options)
     quote do
-      @exposures(
+      @exposures @exposures ++ [
         unquote(options)
         |> Keyword.put(:attr_name, unquote(attr_name))
         |> Keyword.put(:group, @group ++ [unquote(attr_name)])
         |> Keyword.put(:do_func, unquote(Macro.escape(do_func)))
         |> parse
-      )
+      ]
     end
   end
 
   @spec parse(Keyword.t) :: Maru.Entity.Struct.Exposure.t
   def parse(options) do
     pipeline = [
-      :attr_name, :serializer, :if_func, :do_func
+      :attr_name, :serializer, :if_func, :do_func, :build_struct,
     ]
     accumulator = %{
       options:     options,
       runtime:     quote do %Runtime{} end,
+      information: %Information{},
     }
-    Enum.reduce(pipeline, accumulator, &do_parse/2) |> Map.drop([:options])
+    Enum.reduce(pipeline, accumulator, &do_parse/2)
   end
 
-  defp do_parse(:attr_name, %{options: options, runtime: runtime}) do
+  defp do_parse(:attr_name, %{options: options, runtime: runtime, information: information}) do
     group     = options |> Keyword.fetch!(:group)
     attr_name = options |> Keyword.fetch!(:attr_name)
     param_key = options |> Keyword.get(:source, attr_name)
@@ -146,11 +196,12 @@ defmodule Maru.Entity do
          %{ unquote(runtime) |
             attr_group: unquote(group),
           }
-       end
+       end,
+       information: %{information | attr_group: group},
     }
   end
 
-  defp do_parse(:if_func, %{options: options, runtime: runtime}) do
+  defp do_parse(:if_func, %{options: options, runtime: runtime, information: information}) do
     if_func     = options |> Keyword.get(:if)
     unless_func = options |> Keyword.get(:unless)
     options     = options |> Keyword.drop([:if, :unless])
@@ -184,11 +235,12 @@ defmodule Maru.Entity do
          %{ unquote(runtime) |
             if_func: unquote(func)
           }
-       end
+       end,
+       information: information,
     }
   end
 
-  defp do_parse(:serializer, %{options: options, runtime: runtime}) do
+  defp do_parse(:serializer, %{options: options, runtime: runtime, information: information}) do
     serializer =
       case Keyword.get(options, :using, nil) do
       nil -> nil
@@ -202,11 +254,12 @@ defmodule Maru.Entity do
          %{ unquote(runtime) |
             serializer: unquote(Macro.escape(serializer))
          }
-       end
+       end,
+       information: information,
      }
   end
 
-  defp do_parse(:do_func, %{options: options, runtime: runtime}) do
+  defp do_parse(:do_func, %{options: options, runtime: runtime, information: information}) do
     do_func    = options |> Keyword.get(:do_func)
     param_key  = options |> Keyword.fetch!(:param_key)
     batch      = Keyword.get(options, :batch)
@@ -239,8 +292,13 @@ defmodule Maru.Entity do
          %{ unquote(runtime) |
             do_func: unquote(func)
           }
-       end
+       end,
+       information: information,
     }
+  end
+
+  defp do_parse(:build_struct, %{runtime: runtime, information: information}) do
+    %Exposure{runtime: runtime, information: information}
   end
 
   @doc """
@@ -260,7 +318,6 @@ defmodule Maru.Entity do
   defmacro __before_compile__(env) do
     exposures =
       Module.get_attribute(env.module, :exposures)
-      |> Enum.reverse
       |> Enum.map(fn(e) ->
         e.runtime
       end)
