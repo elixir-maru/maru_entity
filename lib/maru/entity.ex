@@ -51,6 +51,7 @@ defmodule Maru.Entity do
   @type instance    :: map
   @type object      :: map
   @type options     :: map
+  @type group       :: list(atom)
   @type one_or_list :: :one | :list
 
   @doc false
@@ -304,7 +305,7 @@ defmodule Maru.Entity do
   @doc """
   Generate default runtime struct.
   """
-  @spec default_runtime(:atom, any()) :: Macro.t
+  @spec default_runtime(atom(), group()) :: Macro.t
   def default_runtime(:group, group) do
     quote do
       %Runtime{

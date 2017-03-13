@@ -12,5 +12,6 @@ before_script:
   - MIX_ENV=test mix do deps.get
 script:
   - MIX_ENV=test mix test
+  - MIX_ENV=test mix dialyzer
 after_script:
   - MIX_ENV=test mix coveralls.travis

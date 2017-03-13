@@ -27,6 +27,7 @@ defmodule MaruEntity.Mixfile do
   defp deps do
     [ { :ex_doc,      "~> 0.12", only: :docs },
       { :excoveralls, "~> 0.5",  only: :test },
+      { :dialyxir,    "~> 0.5",  only: :test, runtime: false},
     ]
   end
 
