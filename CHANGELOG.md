@@ -13,6 +13,7 @@
 ## v0.2.1-dev
 * Enhancements
   * support nested exposure
+  * support extend
 * Bugfix
   * return `[]` instead of `nil` for batch  list
 

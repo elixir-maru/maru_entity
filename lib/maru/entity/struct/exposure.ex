@@ -2,17 +2,18 @@ defmodule Maru.Entity.Struct.Exposure do
   @moduledoc false
 
   @type t :: %__MODULE__{
-    runtime: Maru.Entity.Struct.Exposure.Runtime.t
+    runtime: Maru.Entity.Struct.Exposure.Runtime.t,
+    information: Maru.Entity.Struct.Exposure.Information.t,
   }
 
-  defstruct runtime: nil
+  defstruct runtime: nil, information: nil
 end
 
 defmodule Maru.Entity.Struct.Exposure.Runtime do
   @moduledoc false
 
   @type t :: %__MODULE__{
-    attr_group: list(atom | String.t),
+    attr_group: list(atom),
     if_func:    (Maru.Entity.instance, Keyword.t -> boolean),
     do_func:    (Maru.Entity.instance, Keyword.t -> any),
     serializer: Maru.Entity.Struct.Serializer.t | nil,
@@ -23,6 +24,16 @@ defmodule Maru.Entity.Struct.Exposure.Runtime do
             do_func:    nil,
             serializer: nil
 
+end
+
+defmodule Maru.Entity.Struct.Exposure.Information do
+  @moduledoc false
+
+  @type t :: %__MODULE__{
+    attr_group: list(atom),
+  }
+
+  defstruct attr_group: nil
 end
 
 

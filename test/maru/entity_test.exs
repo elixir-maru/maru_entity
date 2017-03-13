@@ -301,4 +301,76 @@ defmodule Maru.EntityTest do
     end
 
   end
+
+  describe "extend" do
+    defmodule UserData do
+      use Maru.Entity
+
+      expose :name do
+        expose :first_name
+        expose :last_name
+      end
+      expose :address do
+        expose :address1
+        expose :address2
+        expose :address_state
+        expose :address_city
+      end
+      expose :email
+      expose :phone
+    end
+
+    defmodule UserDataDetail do
+      use Maru.Entity
+      extend UserData
+
+      expose :field1
+    end
+
+    defmodule MailingAddress do
+      use Maru.Entity
+      extend Maru.EntityTest.UserData, only: [
+        :name, address: [:address1, :address2]
+      ]
+      expose :field2
+    end
+
+    defmodule BasicInfomation do
+      use Maru.Entity
+      extend Maru.EntityTest.UserData, except: [:address]
+      expose :field3
+    end
+
+    test "only and except conflict" do
+      assert_raise RuntimeError, ":only and :except conflict", fn ->
+        defmodule OnlyAndExceptConflict do
+          use Maru.Entity
+          extend Maru.EntityTest.UserData, only: [:a], except: [:b]
+        end
+      end
+    end
+
+    test "extend" do
+      assert [
+        [:name], [:name, :first_name], [:name, :last_name],
+        [:address], [:address, :address1], [:address, :address2], [:address, :address_state], [:address, :address_city],
+        [:email], [:phone], [:field1],
+      ] = Enum.map(UserDataDetail.__exposures__, & &1.attr_group)
+    end
+
+    test "only extend" do
+      assert [
+        [:name], [:name, :first_name], [:name, :last_name],
+        [:address], [:address, :address1], [:address, :address2],
+        [:field2],
+      ] = Enum.map(MailingAddress.__exposures__, & &1.attr_group)
+    end
+
+    test "except extend" do
+      assert [
+        [:name], [:name, :first_name], [:name, :last_name],
+        [:email], [:phone], [:field3],
+      ] = Enum.map(BasicInfomation.__exposures__, & &1.attr_group)
+    end
+  end
 end
