@@ -42,7 +42,7 @@ defmodule Maru.Entity.Runtime do
   end
 
 
-  @spec terminate(id, Maru.Entity.one_or_list, state) :: Maru.Entity.object
+  @spec terminate(id, Maru.Entity.one_or_many, state) :: Maru.Entity.object
   defp terminate(id, type, state) do
     :ets.delete(state.old_link)
     :ets.delete(state.new_link)
@@ -70,7 +70,7 @@ defmodule Maru.Entity.Runtime do
     id
   end
 
-  defp save_link(%Serializer{type: :list}=s, instances, ets) do
+  defp save_link(%Serializer{type: :many}=s, instances, ets) do
     id = make_ref()
     instances
     |> Stream.with_index
@@ -81,13 +81,13 @@ defmodule Maru.Entity.Runtime do
   end
 
 
-  @spec do_build(id, Maru.Entity.one_or_list, :ets.tab) :: Maru.Entity.object | [Maru.Entity.object]
+  @spec do_build(id, Maru.Entity.one_or_many, :ets.tab) :: Maru.Entity.object | [Maru.Entity.object]
   defp do_build(id, :one, ets) do
     [{_id, i, nil}] = :ets.lookup(ets, id)
     do_build_one(i, ets)
   end
 
-  defp do_build(id, :list, ets) do
+  defp do_build(id, :many, ets) do
     :ets.lookup(ets, id)
     |> Enum.sort(fn {_, _, idx1}, {_, _, idx2} ->
       idx1 < idx2
@@ -201,7 +201,7 @@ defmodule Maru.Entity.Runtime do
       |> Enum.into(%{})
 
     :ets.foldl(fn
-      {id, %Serializer{type: :list}=s, %Batch{module: module, key: key}}, _ ->
+      {id, %Serializer{type: :many}=s, %Batch{module: module, key: key}}, _ ->
         data
         |> Map.get(module, %{})
         |> Map.get(key, [])

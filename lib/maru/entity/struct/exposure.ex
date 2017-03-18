@@ -42,7 +42,7 @@ defmodule Maru.Entity.Struct.Serializer do
 
   @type t :: %__MODULE__{
     module:  module,
-    type:    Maru.Entity.one_or_list,
+    type:    Maru.Entity.one_or_many,
     options: Keyword.t,
   }
 
@@ -56,7 +56,7 @@ defmodule Maru.Entity.Struct.Instance do
 
   @type t :: %__MODULE__{
     data:  Maru.Entity.object,
-    links: list({atom | String.t, Maru.Entity.one_or_list, Maru.Entity.Runtime.id}),
+    links: list({atom | String.t, Maru.Entity.one_or_many, Maru.Entity.Runtime.id}),
   }
 
   defstruct data: %{},

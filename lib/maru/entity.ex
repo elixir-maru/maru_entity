@@ -52,7 +52,7 @@ defmodule Maru.Entity do
   @type object      :: map
   @type options     :: map
   @type group       :: list(atom)
-  @type one_or_list :: :one | :list
+  @type one_or_many :: :one | :many
 
   @doc false
   defmacro __using__(_) do
@@ -248,7 +248,7 @@ defmodule Maru.Entity do
       {:__aliases__, _, module} ->
         %Serializer{module: Module.safe_concat(module), type: :one}
       {{:., _, [Access, :get]}, _, [{:__aliases__, _, [:List]}, {:__aliases__, _, module},]} ->
-        %Serializer{module: Module.safe_concat(module), type: :list}
+        %Serializer{module: Module.safe_concat(module), type: :many}
     end
     %{ options: options |> Keyword.drop([:using]),
        runtime: quote do
@@ -338,7 +338,7 @@ defmodule Maru.Entity do
       def serialize(instance, options \\ %{}, entity_options \\ []) do
         %Serializer{
           module:  __MODULE__,
-          type:    is_list(instance) && :list || :one,
+          type:    is_list(instance) && :many || :one,
           options: options,
         } |> Maru.Entity.Runtime.serialize(instance, entity_options)
       end
