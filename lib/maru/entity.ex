@@ -120,9 +120,11 @@ defmodule Maru.Entity do
   defmacro expose(attr_name) when is_atom(attr_name) do
     quote do
       @exposures @exposures ++ [parse(
-        [ attr_name: unquote(attr_name),
+        [
+          attr_name: unquote(attr_name),
           group: @group ++ [unquote(attr_name)],
-        ]
+        ],
+        unquote(Macro.escape(__CALLER__))
       )]
     end
   end
@@ -148,12 +150,13 @@ defmodule Maru.Entity do
   """
   defmacro expose(attr_name, options) when is_atom(attr_name) and is_list(options) do
     options = Macro.escape(options)
+
     quote do
       @exposures @exposures ++ [
         unquote(options)
         |> Keyword.put(:attr_name, unquote(attr_name))
         |> Keyword.put(:group, @group ++ [unquote(attr_name)])
-        |> parse
+        |> parse(unquote(Macro.escape(__CALLER__)))
       ]
     end
   end
@@ -163,19 +166,20 @@ defmodule Maru.Entity do
   """
   defmacro expose(attr_name, options, do_func) when is_atom(attr_name) and is_list(options) do
     options = Macro.escape(options)
+
     quote do
       @exposures @exposures ++ [
         unquote(options)
         |> Keyword.put(:attr_name, unquote(attr_name))
         |> Keyword.put(:group, @group ++ [unquote(attr_name)])
         |> Keyword.put(:do_func, unquote(Macro.escape(do_func)))
-        |> parse
+        |> parse(unquote(Macro.escape(__CALLER__)))
       ]
     end
   end
 
-  @spec parse(Keyword.t) :: Maru.Entity.Struct.Exposure.t
-  def parse(options) do
+  @spec parse(Keyword.t, Module.t) :: Maru.Entity.Struct.Exposure.t
+  def parse(options, caller) do
     pipeline = [
       :attr_name, :serializer, :if_func, :do_func, :build_struct,
     ]
@@ -184,10 +188,10 @@ defmodule Maru.Entity do
       runtime:     quote do %Runtime{} end,
       information: %Information{},
     }
-    Enum.reduce(pipeline, accumulator, &do_parse/2)
+    Enum.reduce(pipeline, accumulator, &(do_parse(&1, &2, caller)))
   end
 
-  defp do_parse(:attr_name, %{options: options, runtime: runtime, information: information}) do
+  defp do_parse(:attr_name, %{options: options, runtime: runtime, information: information}, caller) do
     group     = options |> Keyword.fetch!(:group)
     attr_name = options |> Keyword.fetch!(:attr_name)
     param_key = options |> Keyword.get(:source, attr_name)
@@ -202,7 +206,7 @@ defmodule Maru.Entity do
     }
   end
 
-  defp do_parse(:if_func, %{options: options, runtime: runtime, information: information}) do
+  defp do_parse(:if_func, %{options: options, runtime: runtime, information: information}, caller) do
     if_func     = options |> Keyword.get(:if)
     unless_func = options |> Keyword.get(:unless)
     options     = options |> Keyword.drop([:if, :unless])
@@ -241,15 +245,16 @@ defmodule Maru.Entity do
     }
   end
 
-  defp do_parse(:serializer, %{options: options, runtime: runtime, information: information}) do
+  defp do_parse(:serializer, %{options: options, runtime: runtime, information: information}, caller) do
     serializer =
       case Keyword.get(options, :using, nil) do
-      nil -> nil
-      {:__aliases__, _, module} ->
-        %Serializer{module: Module.safe_concat(module), type: :one}
-      {{:., _, [Access, :get]}, _, [{:__aliases__, _, [:List]}, {:__aliases__, _, module},]} ->
-        %Serializer{module: Module.safe_concat(module), type: :many}
-    end
+        nil -> nil
+        {:__aliases__, _, _} = module ->
+          %Serializer{module: Macro.expand(module, caller), type: :one}
+        {{:., _, [Access, :get]}, _, [{:__aliases__, _, [:List]}, {:__aliases__, _, _} = module,]} ->
+          %Serializer{module: Macro.expand(module, caller), type: :many}
+      end
+
     %{ options: options |> Keyword.drop([:using]),
        runtime: quote do
          %{ unquote(runtime) |
@@ -260,7 +265,7 @@ defmodule Maru.Entity do
      }
   end
 
-  defp do_parse(:do_func, %{options: options, runtime: runtime, information: information}) do
+  defp do_parse(:do_func, %{options: options, runtime: runtime, information: information}, caller) do
     do_func    = options |> Keyword.get(:do_func)
     param_key  = options |> Keyword.fetch!(:param_key)
     batch      = Keyword.get(options, :batch)
@@ -298,7 +303,7 @@ defmodule Maru.Entity do
     }
   end
 
-  defp do_parse(:build_struct, %{runtime: runtime, information: information}) do
+  defp do_parse(:build_struct, %{runtime: runtime, information: information}, caller) do
     %Exposure{runtime: runtime, information: information}
   end
 
