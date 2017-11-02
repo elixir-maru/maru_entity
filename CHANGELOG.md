@@ -10,12 +10,13 @@
     `expose :posts, with: PostEntity` should be `expose :posts, with: List[PostEntity]`
 
 
-## v0.2.1-dev
+## v0.2.1 (2017-11-03)
 * Enhancements
   * support nested exposure
   * support extend
 * Bugfix
   * return `[]` instead of `nil` for batch  list
+  * allow aliased modules in `using`
 
 ## v0.2.0 (2017-02-04)
 * Enhancements
