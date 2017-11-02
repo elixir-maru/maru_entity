@@ -11,12 +11,13 @@ defmodule Maru.EntityTest do
 
   defmodule CommentEntity do
     use Maru.Entity
+    alias Maru.EntityTest.PostEntity
 
     expose :body
     expose :nested do
       expose :rename, source: :body
     end
-    expose :post, using: Maru.EntityTest.PostEntity
+    expose :post, using: PostEntity
   end
 
   defmodule IfCommentEntity do
