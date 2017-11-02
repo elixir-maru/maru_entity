@@ -67,7 +67,6 @@ defmodule Maru.EntityTest do
       assert PostEntity.serialize([post1, post2]) == expected
     end
 
-    @tag asdf: true
     test "serializes stuff using with" do
       post = %{id: 2, title: "My other title", body: "<b>html body</b>"}
       comment = %{body: "<b>comment body</b>", post: post}

@@ -191,7 +191,7 @@ defmodule Maru.Entity do
     Enum.reduce(pipeline, accumulator, &(do_parse(&1, &2, caller)))
   end
 
-  defp do_parse(:attr_name, %{options: options, runtime: runtime, information: information}, caller) do
+  defp do_parse(:attr_name, %{options: options, runtime: runtime, information: information}, _caller) do
     group     = options |> Keyword.fetch!(:group)
     attr_name = options |> Keyword.fetch!(:attr_name)
     param_key = options |> Keyword.get(:source, attr_name)
@@ -206,7 +206,7 @@ defmodule Maru.Entity do
     }
   end
 
-  defp do_parse(:if_func, %{options: options, runtime: runtime, information: information}, caller) do
+  defp do_parse(:if_func, %{options: options, runtime: runtime, information: information}, _caller) do
     if_func     = options |> Keyword.get(:if)
     unless_func = options |> Keyword.get(:unless)
     options     = options |> Keyword.drop([:if, :unless])
@@ -265,7 +265,7 @@ defmodule Maru.Entity do
      }
   end
 
-  defp do_parse(:do_func, %{options: options, runtime: runtime, information: information}, caller) do
+  defp do_parse(:do_func, %{options: options, runtime: runtime, information: information}, _caller) do
     do_func    = options |> Keyword.get(:do_func)
     param_key  = options |> Keyword.fetch!(:param_key)
     batch      = Keyword.get(options, :batch)
@@ -303,7 +303,7 @@ defmodule Maru.Entity do
     }
   end
 
-  defp do_parse(:build_struct, %{runtime: runtime, information: information}, caller) do
+  defp do_parse(:build_struct, %{runtime: runtime, information: information}, _caller) do
     %Exposure{runtime: runtime, information: information}
   end
 
