@@ -4,8 +4,7 @@ defmodule Maru.EntityTest do
   defmodule PostEntity do
     use Maru.Entity
 
-    expose :id
-    expose :title
+    expose [:id, :title]
     expose :content, source: :body
   end
 
