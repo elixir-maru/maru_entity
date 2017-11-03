@@ -143,10 +143,19 @@ defmodule Maru.Entity do
     do: do_expose(attr_or_attrs, options, __CALLER__)
 
   @doc """
-  Expose a field or a set of fields with custom function and options.
+  Expose a field with custom function and options.
   """
-  defmacro expose(attr_or_attrs, options, do_func) when is_list(options),
-    do: do_expose(attr_or_attrs, options, do_func, __CALLER__)
+  defmacro expose(attr_name, options, do_func)
+    when is_atom(attr_name) and is_list(options),
+    do: do_expose(attr_name, options, do_func, __CALLER__)
+
+  @doc """
+  Expose a set of fields with custom function and options.
+  """
+  defmacro expose(attr_names, options, do_func) when is_list(options) do
+    {attr_names, _} = Code.eval_quoted(attr_names) # Allows usage of sigils
+    Enum.map(attr_names, &do_expose(&1, options, do_func, __CALLER__))
+  end
 
   defp do_expose(attr_or_attrs, caller) do
     quote bind_quoted: [
@@ -175,8 +184,7 @@ defmodule Maru.Entity do
 
     quote bind_quoted: [
       attr_or_attrs:   attr_or_attrs,
-      caller:          Macro.escape(caller),
-      options:         options
+      caller:          Macro.escape(caller)
     ] do
       attr_names =
         if is_list(attr_or_attrs),
@@ -185,7 +193,7 @@ defmodule Maru.Entity do
 
       for attr_name <- attr_names do
         @exposures @exposures ++ [
-          options
+          unquote(options)
           |> Keyword.put(:attr_name, attr_name)
           |> Keyword.put(:group, @group ++ [attr_name])
           |> parse(caller)
@@ -194,29 +202,18 @@ defmodule Maru.Entity do
     end
   end
 
-  defp do_expose(attr_or_attrs, options, do_func, caller) when is_list(options) do
+  defp do_expose(attr_name, options, do_func, caller)
+    when is_atom(attr_name) and is_list(options) do
     options = Macro.escape(options)
 
-    quote bind_quoted: [
-      attr_or_attrs: attr_or_attrs,
-      caller:        Macro.escape(caller),
-      do_func:       Macro.escape(do_func),
-      options:       options
-    ] do
-      attr_names =
-        if is_list(attr_or_attrs),
-          do: attr_or_attrs,
-          else: [attr_or_attrs]
-
-      for attr_name <- attr_names do
-        @exposures @exposures ++ [
-          options
-          |> Keyword.put(:attr_name, attr_name)
-          |> Keyword.put(:group, @group ++ [attr_name])
-          |> Keyword.put(:do_func, do_func)
-          |> parse(caller)
-        ]
-      end
+    quote do
+      @exposures @exposures ++ [
+        unquote(options)
+        |> Keyword.put(:attr_name, unquote(attr_name))
+        |> Keyword.put(:group, @group ++ [unquote(attr_name)])
+        |> Keyword.put(:do_func, unquote(Macro.escape(do_func)))
+        |> parse(unquote(Macro.escape(caller)))
+      ]
     end
   end
 
