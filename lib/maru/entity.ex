@@ -115,18 +115,10 @@ defmodule Maru.Entity do
   end
 
   @doc """
-  Expose a field with Map.get.
+  Expose a field or a set of fields with Map.get.
   """
-  defmacro expose(attr_name) when is_atom(attr_name),
-    do: do_expose(attr_name, __CALLER__)
-
-  @doc """
-  Expose a set of fields with Map.get.
-  """
-  defmacro expose(attr_names) do
-    {attr_names, _} = Code.eval_quoted(attr_names) # Allows usage of sigils
-    Enum.map(attr_names, &do_expose(&1, __CALLER__))
-  end
+  defmacro expose(attr_or_attrs),
+    do: do_expose(attr_or_attrs, __CALLER__)
 
   @doc """
   Nested Exposure.
@@ -173,30 +165,25 @@ defmodule Maru.Entity do
     Enum.map(attr_names, &do_expose(&1, options, do_func, __CALLER__))
   end
 
-  defp do_expose(attr_name, options, do_func, caller)
-    when is_atom(attr_name) and is_list(options) do
-    options = Macro.escape(options)
+  defp do_expose(attr_or_attrs, caller) do
+    quote bind_quoted: [
+      attr_or_attrs: attr_or_attrs,
+      caller:        Macro.escape(caller)
+    ] do
+      attr_names =
+        if is_list(attr_or_attrs),
+          do: attr_or_attrs,
+          else: [attr_or_attrs]
 
-    quote do
-      @exposures @exposures ++ [
-        unquote(options)
-        |> Keyword.put(:attr_name, unquote(attr_name))
-        |> Keyword.put(:group, @group ++ [unquote(attr_name)])
-        |> Keyword.put(:do_func, unquote(Macro.escape(do_func)))
-        |> parse(unquote(Macro.escape(caller)))
-      ]
-    end
-  end
-
-  defp do_expose(attr_name, caller) when is_atom(attr_name) do
-    quote do
-      @exposures @exposures ++ [parse(
-        [
-          attr_name: unquote(attr_name),
-          group: @group ++ [unquote(attr_name)],
-        ],
-        unquote(Macro.escape(caller))
-      )]
+      for attr_name <- attr_names do
+        @exposures @exposures ++ [parse(
+          [
+            attr_name: attr_name,
+            group: @group ++ [attr_name],
+          ],
+          caller
+        )]
+      end
     end
   end
 
@@ -208,6 +195,21 @@ defmodule Maru.Entity do
         unquote(options)
         |> Keyword.put(:attr_name, unquote(attr_name))
         |> Keyword.put(:group, @group ++ [unquote(attr_name)])
+        |> parse(unquote(Macro.escape(caller)))
+      ]
+    end
+  end
+
+  defp do_expose(attr_name, options, do_func, caller)
+    when is_atom(attr_name) and is_list(options) do
+    options = Macro.escape(options)
+
+    quote do
+      @exposures @exposures ++ [
+        unquote(options)
+        |> Keyword.put(:attr_name, unquote(attr_name))
+        |> Keyword.put(:group, @group ++ [unquote(attr_name)])
+        |> Keyword.put(:do_func, unquote(Macro.escape(do_func)))
         |> parse(unquote(Macro.escape(caller)))
       ]
     end
