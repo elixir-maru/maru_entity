@@ -151,14 +151,9 @@ defmodule Maru.Entity do
   defp do_expose(attr_or_attrs, caller) do
     quote bind_quoted: [
       attr_or_attrs: attr_or_attrs,
-      caller:        Macro.escape(caller)
+      caller:     Macro.escape(caller)
     ] do
-      attr_names =
-        if is_list(attr_or_attrs),
-          do: attr_or_attrs,
-          else: [attr_or_attrs]
-
-      for attr_name <- attr_names do
+      for attr_name <- to_attr_list(attr_or_attrs) do
         @exposures @exposures ++ [parse(
           [
             attr_name: attr_name,
@@ -174,16 +169,11 @@ defmodule Maru.Entity do
     options = Macro.escape(options)
 
     quote bind_quoted: [
-      attr_or_attrs:   attr_or_attrs,
-      caller:          Macro.escape(caller),
-      options:         options
+      attr_or_attrs: attr_or_attrs,
+      caller:        Macro.escape(caller),
+      options:       options
     ] do
-      attr_names =
-        if is_list(attr_or_attrs),
-          do: attr_or_attrs,
-          else: [attr_or_attrs]
-
-      for attr_name <- attr_names do
+      for attr_name <- to_attr_list(attr_or_attrs) do
         @exposures @exposures ++ [
           options
           |> Keyword.put(:attr_name, attr_name)
@@ -203,12 +193,7 @@ defmodule Maru.Entity do
       do_func:       Macro.escape(do_func),
       options:       options
     ] do
-      attr_names =
-        if is_list(attr_or_attrs),
-          do: attr_or_attrs,
-          else: [attr_or_attrs]
-
-      for attr_name <- attr_names do
+      for attr_name <- to_attr_list(attr_or_attrs) do
         @exposures @exposures ++ [
           options
           |> Keyword.put(:attr_name, attr_name)
@@ -219,6 +204,9 @@ defmodule Maru.Entity do
       end
     end
   end
+
+  def to_attr_list(attrs) when is_list(attrs), do: attrs
+  def to_attr_list(attr) when is_atom(attr), do: [attr]
 
   @spec parse(Keyword.t, Module.t) :: Maru.Entity.Struct.Exposure.t
   def parse(options, caller) do
