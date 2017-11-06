@@ -32,8 +32,7 @@ check [here](https://github.com/elixir-maru/maru_examples/blob/master/entity) if
 defmodule PostEntity do
   use Maru.Entity
 
-  expose :id
-  expose :title
+  expose [:id, :title]
   expose :body, source: :content
 
   expose :disabled, if: fn(post, _options) -> post.is_disabled end
@@ -51,8 +50,7 @@ end
 defmodule CommentEntity do
   use Maru.Entity
 
-  expose :id
-  expose :body
+  expose [:id, :body]
   expose :author, using: AuthorEntity, batch: CommentAuthor.BatchHelper
 end
 
