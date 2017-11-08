@@ -63,6 +63,20 @@ defmodule Maru.Entity do
 
       import          unquote(__MODULE__)
       @before_compile unquote(__MODULE__)
+
+      @doc """
+      Serialize given instance into an object.
+      """
+      @spec serialize(Entity.instance, Entity.options, Keyword.t) :: Maru.Entity.object
+      def serialize(instance, options \\ %{}, entity_options \\ []) do
+        %Serializer{
+          module:  __MODULE__,
+          type:    is_list(instance) && :many || :one,
+          options: options,
+        } |> Maru.Entity.Runtime.serialize(instance, entity_options)
+      end
+
+      defoverridable [serialize: 1, serialize: 2, serialize: 3]
     end
   end
 
@@ -359,18 +373,6 @@ defmodule Maru.Entity do
       @spec __exposures__ :: list(Runtime.t)
       def __exposures__ do
         unquote(exposures)
-      end
-
-      @doc """
-      Serialize given instance into an object.
-      """
-      @spec serialize(Entity.instance, Entity.options, Keyword.t) :: Maru.Entity.object
-      def serialize(instance, options \\ %{}, entity_options \\ []) do
-        %Serializer{
-          module:  __MODULE__,
-          type:    is_list(instance) && :many || :one,
-          options: options,
-        } |> Maru.Entity.Runtime.serialize(instance, entity_options)
       end
     end
   end
