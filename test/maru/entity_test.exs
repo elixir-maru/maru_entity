@@ -1,6 +1,25 @@
 defmodule Maru.EntityTest do
   use ExUnit.Case, async: false
 
+  defmodule StructTest.AliasTest do
+    defstruct [:alias_test]
+  end
+
+  defmodule AliasTestExtended do
+    use Maru.Entity
+    alias StructTest.AliasTest
+
+    expose :alias_test, [], fn _instance, _options ->
+      %AliasTest{alias_test: true}
+    end
+  end
+
+  defmodule AliasTestEntity do
+    use Maru.Entity
+
+    extend AliasTestExtended
+  end
+
   defmodule PostEntity do
     use Maru.Entity
 
@@ -35,9 +54,10 @@ defmodule Maru.EntityTest do
 
   defmodule AuthorEntity do
     use Maru.Entity
+    alias Maru.EntityTest.PostEntity
 
     expose :name
-    expose :posts, using: List[Maru.EntityTest.PostEntity]
+    expose :posts, using: List[PostEntity]
 
     expose :post_count, [], &do_post_count/2
 
@@ -52,6 +72,10 @@ defmodule Maru.EntityTest do
   end
 
   describe "present" do
+    test "alias in do_function" do
+      assert AliasTestEntity.serialize(%{}) == %{alias_test: %Maru.EntityTest.StructTest.AliasTest{alias_test: true}}
+    end
+
     test "returns single object" do
       post = %{id: 1, title: "My title", body: "This is a <b>html body</b>"}
       assert PostEntity.serialize(post) == %{id: 1, title: "My title", content: "This is a <b>html body</b>"}
