@@ -245,6 +245,7 @@ defmodule Maru.Entity do
 
   defp do_parse(:default, %{options: options, runtime: runtime, information: information}) do
     default = Keyword.get(options, :default)
+    options = Keyword.drop(options, [:default])
 
     %{ options: options,
        runtime: quote do

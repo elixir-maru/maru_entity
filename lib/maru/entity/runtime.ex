@@ -284,7 +284,7 @@ defmodule Maru.Entity.Runtime do
          {:halt, data} ->
            %Instance{result | data: data, links: []}
          :skip ->
-           result
+           do_serialize(t, result, instance, options, state)
        end
   end
 
