@@ -59,7 +59,7 @@ defmodule Maru.EntityTest do
     expose :name
     expose :posts, using: List[PostEntity]
 
-    expose :post_count, [], &do_post_count/2
+    expose :post_count, &do_post_count/2
 
     expose :option, [], fn(_, options) ->
       options[:option]

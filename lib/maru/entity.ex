@@ -132,7 +132,7 @@ defmodule Maru.Entity do
   Expose a field or a set of fields with Map.get.
   """
   defmacro expose(attr_or_attrs) do
-    do_expose(attr_or_attrs, [], nil)
+    do_expose(attr_or_attrs, [], nil, __CALLER__)
   end
 
   @doc """
@@ -152,26 +152,35 @@ defmodule Maru.Entity do
   end
 
   @doc """
-  Expose a field or a set of fields with Map.get and options.
+  Depends on the second parameter is a function or list:
+  1. Expose a field or a set of fields with Map.get and options.
+  2. Expose a field or a set of fields with custom function without options.
   """
   defmacro expose(attr_or_attrs, options) when is_list(options) do
-    options = expand_alias(options, __CALLER__)
-    do_expose(attr_or_attrs, options, nil)
+    do_expose(attr_or_attrs, options, nil, __CALLER__)
+  end
+
+
+  defmacro expose(attr_or_attrs, {:fn, _, _}=do_func) do
+    do_expose(attr_or_attrs, [], do_func, __CALLER__)
+  end
+
+  defmacro expose(attr_or_attrs, {:&, _, _}=do_func) do
+    do_expose(attr_or_attrs, [], do_func, __CALLER__)
   end
 
   @doc """
   Expose a field or a set of fields with custom function and options.
   """
   defmacro expose(attr_or_attrs, options, do_func) when is_list(options) do
-    do_func = expand_alias(do_func, __CALLER__)
-    do_expose(attr_or_attrs, options, do_func)
+    do_expose(attr_or_attrs, options, do_func, __CALLER__)
   end
 
-  defp do_expose(attr_or_attrs, options, do_func) when is_list(options) do
+  defp do_expose(attr_or_attrs, options, do_func, caller) when is_list(options) do
     quote bind_quoted: [
       attr_or_attrs: attr_or_attrs,
-      do_func:       Macro.escape(do_func),
-      options:       Macro.escape(options)
+      do_func:       Macro.escape(expand_alias(do_func, caller)),
+      options:       Macro.escape(expand_alias(options, caller))
     ] do
       for attr_name <- to_attr_list(attr_or_attrs) do
         @exposures @exposures ++ [
