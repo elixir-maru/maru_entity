@@ -1,25 +1,6 @@
 defmodule Maru.EntityTest do
   use ExUnit.Case, async: false
 
-  defmodule StructTest.AliasTest do
-    defstruct [:alias_test]
-  end
-
-  defmodule AliasTestExtended do
-    use Maru.Entity
-    alias StructTest.AliasTest
-
-    expose :alias_test, [], fn _instance, _options ->
-      %AliasTest{alias_test: true}
-    end
-  end
-
-  defmodule AliasTestEntity do
-    use Maru.Entity
-
-    extend AliasTestExtended
-  end
-
   defmodule PostEntity do
     use Maru.Entity
 
@@ -72,10 +53,6 @@ defmodule Maru.EntityTest do
   end
 
   describe "present" do
-    test "alias in do_function" do
-      assert AliasTestEntity.serialize(%{}) == %{alias_test: %Maru.EntityTest.StructTest.AliasTest{alias_test: true}}
-    end
-
     test "returns single object" do
       post = %{id: 1, title: "My title", body: "This is a <b>html body</b>"}
       assert PostEntity.serialize(post) == %{id: 1, title: "My title", content: "This is a <b>html body</b>"}
@@ -326,6 +303,32 @@ defmodule Maru.EntityTest do
 
   end
 
+
+  describe "jalias" do
+    defmodule StructTest.AliasTest do
+      defstruct [:alias_test]
+    end
+
+    defmodule AliasTestExtended do
+      use Maru.Entity
+      alias StructTest.AliasTest
+
+      expose :alias_test, [], fn _instance, _options ->
+        %AliasTest{alias_test: true}
+      end
+    end
+
+    defmodule AliasTestEntity do
+      use Maru.Entity
+
+      extend AliasTestExtended
+    end
+
+    test "alias in do_function" do
+      assert AliasTestEntity.serialize(%{}) == %{alias_test: %Maru.EntityTest.StructTest.AliasTest{alias_test: true}}
+    end
+  end
+
   describe "extend" do
     defmodule UserData do
       use Maru.Entity
@@ -397,4 +400,53 @@ defmodule Maru.EntityTest do
       ] = Enum.map(BasicInfomation.__exposures__, & &1.attr_group)
     end
   end
+
+  describe "into" do
+    defmodule IntoTest do
+      use Maru.Entity, into: []
+
+      expose :foo
+    end
+
+    test "into" do
+      assert [foo: 3] == IntoTest.serialize(%{foo: 3})
+    end
+  end
+
+  describe "erorr handler" do
+    defmodule ErrorHandlerOneTest do
+      use Maru.Entity
+
+      expose :group do
+        expose :id, fn _item, _options ->
+          raise "parse id error"
+        end
+      end
+
+      def handle_error([:group, :id], _, _) do
+        {:ok, 900303}
+      end
+    end
+
+    defmodule ErrorHandlerAllTest do
+      use Maru.Entity
+
+      expose :id, fn _item, _options ->
+        raise "parse id error"
+      end
+
+      def handle_error([:id], _, _) do
+        {:halt, nil}
+      end
+    end
+
+    test "one field" do
+      assert %{group: %{id: 900303}} == ErrorHandlerOneTest.serialize(%{id: 1})
+    end
+
+    test "all field" do
+      assert is_nil(ErrorHandlerAllTest.serialize(%{id: 1}))
+    end
+  end
+
 end

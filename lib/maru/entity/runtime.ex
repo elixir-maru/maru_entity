@@ -100,11 +100,15 @@ defmodule Maru.Entity.Runtime do
 
   @spec do_build_one(Instance.t, :ets.tab) :: Maru.Entity.object
   defp do_build_one(%Instance{data: data, links: links, into: into}, ets) do
-    links
-    |> Enum.reduce(data, fn {attr_group, type, id}, acc ->
-      put_in(acc, attr_group, do_build(id, type, ets))
-    end)
-    |> Enum.into(into)
+    result =
+      Enum.reduce(links, data, fn {attr_group, type, id}, acc ->
+        put_in(acc, attr_group, do_build(id, type, ets))
+      end)
+    if is_nil(into) do
+      result
+    else
+      Enum.into(result, into)
+    end
   end
 
 
@@ -234,24 +238,38 @@ defmodule Maru.Entity.Runtime do
   def do_serialize({id, serializer, instance, idx}, state) do
     exposures = serializer.module.__exposures__
     into = serializer.module.__into__
-    result = do_serialize(exposures, %Instance{into: into}, instance, serializer.options, state)
-    :ets.insert(state.data, {id, result, idx})
+    result = do_serialize(exposures, %Instance{}, instance, serializer, state)
+    :ets.insert(state.data, {id, %Instance{result | into: into}, idx})
     :ok
   rescue
     e -> exit({:error, e, System.stacktrace()})
   end
 
 
-  @spec do_serialize(list(Exposure.Runtime.t), Maru.Entity.object, Maru.Entity.instance, Maru.Entity.options, state) :: Maru.Entity.object
-  defp do_serialize([], result, _instance, _options, _state), do: result
-  defp do_serialize([h | t], result, instance, options, state) do
-    result =
-      if h.if_func.(instance, options) do
-        do_update(h.serializer, h.do_func.(instance, options), h, result, options, state)
-      else
-        result
-      end
-    do_serialize(t, result, instance, options, state)
+  @spec do_serialize(list(Exposure.Runtime.t), Maru.Entity.object, Maru.Entity.instance, Maru.Entity.Serializer.t, state) :: Maru.Entity.object
+  defp do_serialize([], result, _instance, _serializer, _state), do: result
+  defp do_serialize([h | t], result, instance, serializer, state) do
+    h.if_func.(instance, serializer.options)
+    |> case do
+         true ->
+           try do
+             {:ok, h.do_func.(instance, serializer.options)}
+           rescue
+             e ->
+               serializer.module.handle_error(h.attr_group, e, result.data)
+           end
+         false ->
+           :skip
+       end
+    |> case do
+         {:ok, value} ->
+           result = do_update(h.serializer, value, h, result, serializer.options, state)
+           do_serialize(t, result, instance, serializer, state)
+         {:halt, data} ->
+           %Instance{result | data: data, links: []}
+         :skip ->
+           result
+       end
   end
 
 
@@ -261,7 +279,7 @@ defmodule Maru.Entity.Runtime do
     :ets.insert(state.new_batch, {id, nil, batch})
     %Instance{
       result |
-      data: put_in(result.data, field.attr_group, nil),
+      data: put_in(result.data, field.attr_group, :unlinked),
       links: [{field.attr_group, :one, id} | result.links],
     }
   end
@@ -272,7 +290,7 @@ defmodule Maru.Entity.Runtime do
     :ets.insert(state.new_batch, {id, s, batch})
     %Instance{
       result |
-      data: put_in(result.data, field.attr_group, nil),
+      data: put_in(result.data, field.attr_group, :unlinked),
       links: [{field.attr_group, serializer.type, id} | result.links],
     }
   end
@@ -288,7 +306,7 @@ defmodule Maru.Entity.Runtime do
     id = save_link(s, instance, state.new_link)
     %Instance{
       result |
-      data: put_in(result.data, field.attr_group, nil),
+      data: put_in(result.data, field.attr_group, :unlinked),
       links: [{field.attr_group, serializer.type, id} | result.links],
     }
   end

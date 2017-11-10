@@ -56,7 +56,7 @@ defmodule Maru.Entity do
 
   @doc false
   defmacro __using__(opts) do
-    into = opts |> Keyword.get(:into, quote do %{} end)
+    into = Keyword.get(opts, :into)
 
     quote do
       Module.register_attribute __MODULE__, :exposures, persist: true
@@ -84,6 +84,16 @@ defmodule Maru.Entity do
       end
 
       defoverridable [serialize: 1, serialize: 2, serialize: 3]
+
+      @doc """
+      Default error handler.
+      """
+      @spec handle_error(list(atom()), Exception.t(), Maru.Entity.object()) :: any()
+      def handle_error(_attr_group, exception, _data) do
+        raise exception
+      end
+
+      defoverridable [handle_error: 3]
     end
   end
 
