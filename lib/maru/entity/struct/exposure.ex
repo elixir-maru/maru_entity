@@ -17,12 +17,14 @@ defmodule Maru.Entity.Struct.Exposure.Runtime do
     if_func:    (Maru.Entity.instance, Keyword.t -> boolean),
     do_func:    (Maru.Entity.instance, Keyword.t -> any),
     serializer: Maru.Entity.Struct.Serializer.t | nil,
+    default:    any(),
   }
 
   defstruct attr_group: nil,
             if_func:    nil,
             do_func:    nil,
-            serializer: nil
+            serializer: nil,
+            default:    nil
 
 end
 
@@ -31,9 +33,11 @@ defmodule Maru.Entity.Struct.Exposure.Information do
 
   @type t :: %__MODULE__{
     attr_group: list(atom),
+    default:    any(),
   }
 
-  defstruct attr_group: nil
+  defstruct attr_group: nil,
+            default:    nil
 end
 
 

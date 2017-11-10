@@ -259,11 +259,16 @@ defmodule Maru.Entity.Runtime do
          true ->
            try do
              value =
-               case h.do_func do
-                 f when is_function(f, 1) -> f.(instance)
-                 f when is_function(f, 2) -> f.(instance, options)
-                 f when is_function(f, 3) -> f.(instance, options, result.data)
-               end
+               h.do_func
+               |> case do
+                    f when is_function(f, 1) -> f.(instance)
+                    f when is_function(f, 2) -> f.(instance, options)
+                    f when is_function(f, 3) -> f.(instance, options, result.data)
+                  end
+               |> case do
+                    nil -> h.default
+                    value -> value
+                  end
              {:ok, value}
            rescue
              e ->

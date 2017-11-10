@@ -218,7 +218,7 @@ defmodule Maru.Entity do
   @spec parse(Keyword.t) :: Maru.Entity.Struct.Exposure.t
   def parse(options) do
     pipeline = [
-      :attr_name, :serializer, :if_func, :do_func, :build_struct,
+      :attr_name, :serializer, :if_func, :do_func, :default, :build_struct,
     ]
     accumulator = %{
       options:     options,
@@ -240,6 +240,19 @@ defmodule Maru.Entity do
           }
        end,
        information: %{information | attr_group: group},
+    }
+  end
+
+  defp do_parse(:default, %{options: options, runtime: runtime, information: information}) do
+    default = Keyword.get(options, :default)
+
+    %{ options: options,
+       runtime: quote do
+         %{ unquote(runtime) |
+            default: unquote(default),
+          }
+       end,
+       information: %{information | default: default},
     }
   end
 

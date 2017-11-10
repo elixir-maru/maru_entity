@@ -498,10 +498,16 @@ defmodule Maru.EntityTest do
       expose :foo, fn instance -> to_string(instance[:fooo]) end
       expose :bar, fn instance, options -> {instance[:bar], options} end
       expose :baz, fn _instance, _options, data -> is_nil(data[:foo]) end
+      expose :qux, default: :D
     end
 
     test "do function" do
-      assert %{bar: {3, %{a: 1}}, baz: false, foo: "1"} = Function3Test.serialize(%{fooo: 1, bar: 3}, %{a: 1})
+      assert %{
+        foo: "1",
+        bar: {3, %{a: 1}},
+        baz: false,
+        qux: :D,
+      } = Function3Test.serialize(%{fooo: 1, bar: 3}, %{a: 1})
     end
   end
 
