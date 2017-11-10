@@ -258,7 +258,13 @@ defmodule Maru.Entity.Runtime do
     |> case do
          true ->
            try do
-             {:ok, h.do_func.(instance, options)}
+             value =
+               case h.do_func do
+                 f when is_function(f, 1) -> f.(instance)
+                 f when is_function(f, 2) -> f.(instance, options)
+                 f when is_function(f, 3) -> f.(instance, options, result.data)
+               end
+             {:ok, value}
            rescue
              e ->
                result.module.handle_error(h.attr_group, e, result.data)

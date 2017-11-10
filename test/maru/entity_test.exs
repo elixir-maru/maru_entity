@@ -23,14 +23,14 @@ defmodule Maru.EntityTest do
     use Maru.Entity
 
     expose :body
-    expose :post, using: Maru.EntityTest.PostEntity, if: fn(comment, _options) -> comment.post != nil end
+    expose :post, using: Maru.EntityTest.PostEntity, if: fn comment, _options -> comment.post != nil end
   end
 
   defmodule UnlessCommentEntity do
     use Maru.Entity
 
     expose :body
-    expose :post, using: Maru.EntityTest.PostEntity, unless: fn(comment, _options) -> comment.post == nil end
+    expose :post, using: Maru.EntityTest.PostEntity, unless: fn comment, _options -> comment.post == nil end
   end
 
   defmodule AuthorEntity do
@@ -303,8 +303,7 @@ defmodule Maru.EntityTest do
 
   end
 
-
-  describe "jalias" do
+  describe "test alias" do
     defmodule StructTest.AliasTest do
       defstruct [:alias_test]
     end
@@ -489,6 +488,20 @@ defmodule Maru.EntityTest do
 
     test "all field" do
       assert is_nil(ErrorHandlerAllTest.serialize(%{id: 1}))
+    end
+  end
+
+  describe "test function/1 function/2 function/3" do
+    defmodule Function3Test do
+      use Maru.Entity
+
+      expose :foo, fn instance -> to_string(instance[:fooo]) end
+      expose :bar, fn instance, options -> {instance[:bar], options} end
+      expose :baz, fn _instance, _options, data -> is_nil(data[:foo]) end
+    end
+
+    test "do function" do
+      assert %{bar: {3, %{a: 1}}, baz: false, foo: "1"} = Function3Test.serialize(%{fooo: 1, bar: 3}, %{a: 1})
     end
   end
 
