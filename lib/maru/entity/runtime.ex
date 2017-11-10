@@ -99,11 +99,12 @@ defmodule Maru.Entity.Runtime do
 
 
   @spec do_build_one(Instance.t, :ets.tab) :: Maru.Entity.object
-  defp do_build_one(%Instance{data: data, links: []}, _ets), do: data
-  defp do_build_one(%Instance{data: data, links: links}, ets) do
-    Enum.reduce(links, data, fn {attr_group, type, id}, acc ->
+  defp do_build_one(%Instance{data: data, links: links, into: into}, ets) do
+    links
+    |> Enum.reduce(data, fn {attr_group, type, id}, acc ->
       put_in(acc, attr_group, do_build(id, type, ets))
     end)
+    |> Enum.into(into)
   end
 
 
@@ -232,7 +233,8 @@ defmodule Maru.Entity.Runtime do
 
   def do_serialize({id, serializer, instance, idx}, state) do
     exposures = serializer.module.__exposures__
-    result = do_serialize(exposures, %Instance{}, instance, serializer.options, state)
+    into = serializer.module.__into__
+    result = do_serialize(exposures, %Instance{into: into}, instance, serializer.options, state)
     :ets.insert(state.data, {id, result, idx})
     :ok
   rescue
@@ -258,6 +260,7 @@ defmodule Maru.Entity.Runtime do
     id = make_ref()
     :ets.insert(state.new_batch, {id, nil, batch})
     %Instance{
+      result |
       data: put_in(result.data, field.attr_group, nil),
       links: [{field.attr_group, :one, id} | result.links],
     }
@@ -268,6 +271,7 @@ defmodule Maru.Entity.Runtime do
     s = %{serializer | options: options}
     :ets.insert(state.new_batch, {id, s, batch})
     %Instance{
+      result |
       data: put_in(result.data, field.attr_group, nil),
       links: [{field.attr_group, serializer.type, id} | result.links],
     }
@@ -283,6 +287,7 @@ defmodule Maru.Entity.Runtime do
     s = %{serializer | options: options}
     id = save_link(s, instance, state.new_link)
     %Instance{
+      result |
       data: put_in(result.data, field.attr_group, nil),
       links: [{field.attr_group, serializer.type, id} | result.links],
     }

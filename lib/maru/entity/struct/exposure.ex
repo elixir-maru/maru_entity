@@ -57,10 +57,12 @@ defmodule Maru.Entity.Struct.Instance do
   @type t :: %__MODULE__{
     data:  Maru.Entity.object,
     links: list({atom | String.t, Maru.Entity.one_or_many, Maru.Entity.Runtime.id}),
+    into: Collectable.t(),
   }
 
   defstruct data: %{},
-            links: []
+            links: [],
+            into: %{}
 
 end
 

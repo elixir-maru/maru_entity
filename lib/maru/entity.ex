@@ -55,7 +55,9 @@ defmodule Maru.Entity do
   @type one_or_many :: :one | :many
 
   @doc false
-  defmacro __using__(_) do
+  defmacro __using__(opts) do
+    into = opts |> Keyword.get(:into, quote do %{} end)
+
     quote do
       Module.register_attribute __MODULE__, :exposures, persist: true
       @group []
@@ -63,6 +65,11 @@ defmodule Maru.Entity do
 
       import          unquote(__MODULE__)
       @before_compile unquote(__MODULE__)
+
+      @doc false
+      def __into__ do
+        unquote(into)
+      end
 
       @doc """
       Serialize given instance into an object.
