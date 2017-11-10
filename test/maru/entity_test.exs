@@ -401,16 +401,59 @@ defmodule Maru.EntityTest do
     end
   end
 
-  describe "into" do
-    defmodule IntoTest do
-      use Maru.Entity, into: []
+  describe "before finish" do
+    defmodule BeforeFinishTest do
+      use Maru.Entity
 
       expose :foo
+
+      def before_finish(item) do
+        Enum.into(item, [])
+      end
     end
 
-    test "into" do
-      assert [foo: 3] == IntoTest.serialize(%{foo: 3})
+    test "before finish" do
+      assert [foo: 3] == BeforeFinishTest.serialize(%{foo: 3})
     end
+
+    defmodule FooBatchHelper do
+      def key(instance, _) do
+        instance.id
+      end
+
+      def resolve(keys) do
+        for id <- keys, into: %{} do
+          {id, %{str_id: to_string(id)}}
+        end
+      end
+    end
+
+    defmodule FooBatch do
+      use Maru.Entity
+
+      expose :str_id
+
+      def before_finish(item) do
+        Enum.to_list(item)
+      end
+    end
+
+    defmodule BeforeFinishBatchTest do
+      use Maru.Entity
+
+      expose :foo, using: FooBatch, batch: FooBatchHelper
+
+      def before_finish(item) do
+        Enum.to_list(item)
+      end
+    end
+
+    test "before finish with batch" do
+      assert [
+        [foo: [str_id: "3"]], [foo: [str_id: "7"]], [foo: [str_id: "9"]]
+      ] = BeforeFinishBatchTest.serialize([%{id: 3}, %{id: 7}, %{id: 9}])
+    end
+
   end
 
   describe "erorr handler" do

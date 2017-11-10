@@ -99,16 +99,15 @@ defmodule Maru.Entity.Runtime do
 
 
   @spec do_build_one(Instance.t, :ets.tab) :: Maru.Entity.object
-  defp do_build_one(%Instance{data: data, links: links, into: into}, ets) do
-    result =
-      Enum.reduce(links, data, fn {attr_group, type, id}, acc ->
-        put_in(acc, attr_group, do_build(id, type, ets))
-      end)
-    if is_nil(into) do
-      result
-    else
-      Enum.into(result, into)
-    end
+  defp do_build_one(%Instance{data: data, links: links, module: module}, ets) do
+    links
+    |> Enum.reduce(data, fn {attr_group, type, id}, acc ->
+         put_in(acc, attr_group, do_build(id, type, ets))
+       end)
+    |> case do
+         result when is_nil(module) -> result
+         result -> module.before_finish(result)
+       end
   end
 
 
@@ -237,34 +236,40 @@ defmodule Maru.Entity.Runtime do
 
   def do_serialize({id, serializer, instance, idx}, state) do
     exposures = serializer.module.__exposures__
-    into = serializer.module.__into__
-    result = do_serialize(exposures, %Instance{}, instance, serializer, state)
-    :ets.insert(state.data, {id, %Instance{result | into: into}, idx})
+    result =
+      do_serialize(
+        exposures,
+        %Instance{module: serializer.module},
+        instance,
+        serializer.options,
+        state
+      )
+    :ets.insert(state.data, {id, result, idx})
     :ok
   rescue
     e -> exit({:error, e, System.stacktrace()})
   end
 
 
-  @spec do_serialize(list(Exposure.Runtime.t), Maru.Entity.object, Maru.Entity.instance, Maru.Entity.Serializer.t, state) :: Maru.Entity.object
-  defp do_serialize([], result, _instance, _serializer, _state), do: result
-  defp do_serialize([h | t], result, instance, serializer, state) do
-    h.if_func.(instance, serializer.options)
+  @spec do_serialize(list(Exposure.Runtime.t), Maru.Entity.object, Maru.Entity.instance, Maru.Entity.options, state) :: Maru.Entity.object
+  defp do_serialize([], result, _instance, _options, _state), do: result
+  defp do_serialize([h | t], result, instance, options, state) do
+    h.if_func.(instance, options)
     |> case do
          true ->
            try do
-             {:ok, h.do_func.(instance, serializer.options)}
+             {:ok, h.do_func.(instance, options)}
            rescue
              e ->
-               serializer.module.handle_error(h.attr_group, e, result.data)
+               result.module.handle_error(h.attr_group, e, result.data)
            end
          false ->
            :skip
        end
     |> case do
          {:ok, value} ->
-           result = do_update(h.serializer, value, h, result, serializer.options, state)
-           do_serialize(t, result, instance, serializer, state)
+           result = do_update(h.serializer, value, h, result, options, state)
+           do_serialize(t, result, instance, options, state)
          {:halt, data} ->
            %Instance{result | data: data, links: []}
          :skip ->
