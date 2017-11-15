@@ -480,7 +480,7 @@ defmodule Maru.EntityTest do
       expose :bar
 
       def before_serialize(item, options) do
-        {:ok, %{bar: item.bar + options.baz + 1}}
+        {:ok, item, options, %{bar: item.bar + options.baz + 1}}
       end
     end
 
