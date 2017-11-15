@@ -464,10 +464,14 @@ defmodule Maru.EntityTest do
       def before_serialize(item, options) do
         {:halt, item.foo + options.bar + 1}
       end
+
+      def before_finish(item, _options) do
+        to_string(item)
+      end
     end
 
     test "before serialize halt" do
-      assert 5 == BeforeSerializeHaltTest.serialize(%{foo: 3}, %{bar: 1})
+      assert "5" == BeforeSerializeHaltTest.serialize(%{foo: 3}, %{bar: 1})
     end
 
     defmodule BeforeSerializeTest do
@@ -493,7 +497,7 @@ defmodule Maru.EntityTest do
 
 
     test "before serialize nested" do
-      assert %{foo: 12, bar: [%{bar: 104}, %{bar: 107}]} = BeforeSerializeNestedTest.serialize(%{foo: %{foo: 1}, bar: [%{bar: 3}, %{bar: 6}]}, %{bar: 10, baz: 100}) |> IO.inspect
+      assert %{foo: "12", bar: [%{bar: 104}, %{bar: 107}]} = BeforeSerializeNestedTest.serialize(%{foo: %{foo: 1}, bar: [%{bar: 3}, %{bar: 6}]}, %{bar: 10, baz: 100})
     end
 
   end
