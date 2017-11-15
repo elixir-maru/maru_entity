@@ -455,6 +455,49 @@ defmodule Maru.EntityTest do
 
   end
 
+  describe "before serialize" do
+    defmodule BeforeSerializeHaltTest do
+      use Maru.Entity
+
+      expose :foo
+
+      def before_serialize(item, options) do
+        {:halt, item.foo + options.bar + 1}
+      end
+    end
+
+    test "before serialize halt" do
+      assert 5 == BeforeSerializeHaltTest.serialize(%{foo: 3}, %{bar: 1})
+    end
+
+    defmodule BeforeSerializeTest do
+      use Maru.Entity
+
+      expose :bar
+
+      def before_serialize(item, options) do
+        {:ok, %{bar: item.bar + options.baz + 1}}
+      end
+    end
+
+    test "before serialize" do
+      assert %{bar: 5} == BeforeSerializeTest.serialize(%{bar: 3}, %{baz: 1})
+    end
+
+    defmodule BeforeSerializeNestedTest do
+      use Maru.Entity
+
+      expose :foo, using: BeforeSerializeHaltTest
+      expose :bar, using: List[BeforeSerializeTest]
+    end
+
+
+    test "before serialize nested" do
+      assert %{foo: 12, bar: [%{bar: 104}, %{bar: 107}]} = BeforeSerializeNestedTest.serialize(%{foo: %{foo: 1}, bar: [%{bar: 3}, %{bar: 6}]}, %{bar: 10, baz: 100}) |> IO.inspect
+    end
+
+  end
+
   describe "erorr handler" do
     defmodule ErrorHandlerOneTest do
       use Maru.Entity

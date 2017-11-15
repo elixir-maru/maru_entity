@@ -235,15 +235,22 @@ defmodule Maru.Entity.Runtime do
   end
 
   def do_serialize({id, serializer, instance, idx}, state) do
-    exposures = serializer.module.__exposures__
     result =
-      do_serialize(
-        exposures,
-        %Instance{module: serializer.module},
-        instance,
-        serializer.options,
-        state
-      )
+      case serializer.module.before_serialize(instance, serializer.options) do
+        {:halt, result} ->
+          %Instance{module: serializer.module, data: result}
+
+        {:ok, instance} ->
+          exposures = serializer.module.__exposures__
+          do_serialize(
+            exposures,
+            %Instance{module: serializer.module},
+            instance,
+            serializer.options,
+            state
+          )
+      end
+
     :ets.insert(state.data, {id, result, idx})
     :ok
   rescue

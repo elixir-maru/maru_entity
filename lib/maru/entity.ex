@@ -95,6 +95,14 @@ defmodule Maru.Entity do
       def before_finish(item, _options), do: item
 
       defoverridable [before_finish: 2]
+
+      @doc """
+      Before serialize hook.
+      """
+      @spec before_serialize(Maru.Entity.object(), Maru.Entity.options) :: {:ok, any()} | {:halt, any()}
+      def before_serialize(item, _options), do: {:ok, item}
+
+      defoverridable [before_serialize: 2]
     end
   end
 
