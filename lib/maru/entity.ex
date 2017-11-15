@@ -91,10 +91,10 @@ defmodule Maru.Entity do
       @doc """
       Before finish hook.
       """
-      @spec before_finish(Maru.Entity.object()) :: any()
-      def before_finish(item), do: item
+      @spec before_finish(Maru.Entity.object(), Maru.Entity.options) :: any()
+      def before_finish(item, _options), do: item
 
-      defoverridable [before_finish: 1]
+      defoverridable [before_finish: 2]
     end
   end
 

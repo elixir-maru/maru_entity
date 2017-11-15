@@ -406,13 +406,13 @@ defmodule Maru.EntityTest do
 
       expose :foo
 
-      def before_finish(item) do
-        Enum.into(item, [])
+      def before_finish(item, options) do
+        [options | Enum.into(item, [])]
       end
     end
 
     test "before finish" do
-      assert [foo: 3] == BeforeFinishTest.serialize(%{foo: 3})
+      assert [%{bar: 1}, {:foo, 3}] == BeforeFinishTest.serialize(%{foo: 3}, %{bar: 1})
     end
 
     defmodule FooBatchHelper do
@@ -432,7 +432,7 @@ defmodule Maru.EntityTest do
 
       expose :str_id
 
-      def before_finish(item) do
+      def before_finish(item, _options) do
         Enum.to_list(item)
       end
     end
@@ -442,7 +442,7 @@ defmodule Maru.EntityTest do
 
       expose :foo, using: FooBatch, batch: FooBatchHelper
 
-      def before_finish(item) do
+      def before_finish(item, _options) do
         Enum.to_list(item)
       end
     end

@@ -20,12 +20,12 @@ defmodule Maru.Entity.Runtime do
 
 
   @doc false
-  @spec serialize(Serializer.t, Maru.Entity.instance, Keyword.t) :: Maru.Entity.object
+  @spec serialize(Serializer.t, Maru.Entity.instance, Entity.options) :: Maru.Entity.object
   def serialize(serializer, instance, options) do
     state = init(options)
     id = save_link(serializer, instance, state.old_link)
     state = do_loop(state)
-    terminate(id, serializer.type, state)
+    terminate(id, serializer.type, serializer.options, state)
   end
 
 
@@ -42,14 +42,14 @@ defmodule Maru.Entity.Runtime do
   end
 
 
-  @spec terminate(id, Maru.Entity.one_or_many, state) :: Maru.Entity.object
-  defp terminate(id, type, state) do
+  @spec terminate(id, Maru.Entity.one_or_many, Entity.options, state) :: Maru.Entity.object
+  defp terminate(id, type, options, state) do
     :ets.delete(state.old_link)
     :ets.delete(state.new_link)
     :ets.delete(state.old_batch)
     :ets.delete(state.new_batch)
 
-    data = do_build(id, type, state.data)
+    data = do_build(id, type, options, state.data)
     :ets.delete(state.data)
     data
   end
@@ -81,32 +81,32 @@ defmodule Maru.Entity.Runtime do
   end
 
 
-  @spec do_build(id, Maru.Entity.one_or_many, :ets.tab) :: Maru.Entity.object | [Maru.Entity.object]
-  defp do_build(id, :one, ets) do
+  @spec do_build(id, Maru.Entity.one_or_many, Entity.options, :ets.tab) :: Maru.Entity.object | [Maru.Entity.object]
+  defp do_build(id, :one, options, ets) do
     [{_id, i, nil}] = :ets.lookup(ets, id)
-    do_build_one(i, ets)
+    do_build_one(i, options, ets)
   end
 
-  defp do_build(id, :many, ets) do
+  defp do_build(id, :many, options, ets) do
     :ets.lookup(ets, id)
     |> Enum.sort(fn {_, _, idx1}, {_, _, idx2} ->
       idx1 < idx2
     end)
     |> Enum.map(fn {_id, i, _idx} ->
-      do_build_one(i, ets)
+      do_build_one(i, options, ets)
     end)
   end
 
 
-  @spec do_build_one(Instance.t, :ets.tab) :: Maru.Entity.object
-  defp do_build_one(%Instance{data: data, links: links, module: module}, ets) do
+  @spec do_build_one(Instance.t, Entity.options, :ets.tab) :: Maru.Entity.object
+  defp do_build_one(%Instance{data: data, links: links, module: module}, options, ets) do
     links
     |> Enum.reduce(data, fn {attr_group, type, id}, acc ->
-         put_in(acc, attr_group, do_build(id, type, ets))
+         put_in(acc, attr_group, do_build(id, type, options, ets))
        end)
     |> case do
          result when is_nil(module) -> result
-         result -> module.before_finish(result)
+         result -> module.before_finish(result, options)
        end
   end
 

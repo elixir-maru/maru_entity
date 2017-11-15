@@ -47,7 +47,7 @@ defmodule Maru.Entity.Struct.Serializer do
   @type t :: %__MODULE__{
     module:  module,
     type:    Maru.Entity.one_or_many,
-    options: Keyword.t,
+    options: Entity.options,
   }
 
   defstruct module:  nil,
