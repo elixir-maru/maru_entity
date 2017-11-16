@@ -249,6 +249,19 @@ defmodule Maru.Entity.Runtime do
             options,
             state
           )
+
+        {:ok, attrs, instance, options, data} ->
+          exposures =
+            Enum.filter(serializer.module.__exposures__, fn exposure ->
+              exposure.attr_group in attrs
+            end)
+          do_serialize(
+            exposures,
+            %Instance{module: serializer.module, data: data},
+            instance,
+            options,
+            state
+          )
       end
 
     :ets.insert(state.data, {id, result, idx})
