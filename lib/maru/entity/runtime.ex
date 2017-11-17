@@ -251,6 +251,7 @@ defmodule Maru.Entity.Runtime do
           )
 
         {:ok, attrs, instance, options, data} ->
+          attrs = Enum.map(attrs, &List.wrap/1)
           exposures =
             Enum.filter(serializer.module.__exposures__, fn exposure ->
               exposure.attr_group in attrs

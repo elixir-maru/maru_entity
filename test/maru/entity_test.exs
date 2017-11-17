@@ -500,6 +500,21 @@ defmodule Maru.EntityTest do
       assert %{foo: "12", bar: [%{bar: 104}, %{bar: 107}]} = BeforeSerializeNestedTest.serialize(%{foo: %{foo: 1}, bar: [%{bar: 3}, %{bar: 6}]}, %{bar: 10, baz: 100})
     end
 
+    defmodule BeforeSerializeCutTest do
+      use Maru.Entity
+
+      expose :foo
+      expose :bar
+
+      def before_serialize(item, options) do
+        {:ok, [:foo], item, options, %{qux: 1}}
+      end
+    end
+
+    test "before serialize cut" do
+      assert %{foo: 1, qux: 1} == BeforeSerializeTest.serialize(%{foo: 1, bar: 2})
+    end
+
   end
 
   describe "erorr handler" do
