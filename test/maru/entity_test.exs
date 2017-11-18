@@ -512,7 +512,7 @@ defmodule Maru.EntityTest do
     end
 
     test "before serialize cut" do
-      assert %{foo: 1, qux: 1} == BeforeSerializeTest.serialize(%{foo: 1, bar: 2})
+      assert %{foo: 1, qux: 1} == BeforeSerializeCutTest.serialize(%{foo: 1, bar: 2})
     end
 
   end
