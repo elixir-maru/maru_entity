@@ -301,10 +301,17 @@ defmodule Maru.Entity.Runtime do
           )
 
         {:ok, attrs, instance, options, data} ->
-          attrs = Enum.map(attrs, &List.wrap/1)
+          exposure_filter_func =
+            Keyword.get(
+              state.exposure_filter_funcs,
+              serializer.module,
+              fn _ -> true end
+            )
           exposures =
-            Enum.filter(serializer.module.__exposures__, fn exposure ->
-              exposure.attr_group in attrs
+            serializer.module.__exposures__
+            |> Enum.filter(exposure_filter_func)
+            |> Enum.filter(fn exposure ->
+              exposure.attr_group in Enum.map(attrs, &List.wrap/1)
             end)
           do_serialize(
             exposures,

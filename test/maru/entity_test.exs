@@ -616,6 +616,26 @@ defmodule Maru.EntityTest do
           [{ReturnOnlyWantedFieldsTest, except: [:e, b: [:c]]}]
         )
     end
+
+    defmodule ReturnOnlyWantedFieldsWithBeforeSerializeTest do
+      use Maru.Entity
+
+      expose :a
+      expose :b
+
+      def before_serialize(item, options) do
+        {:ok, [:a], item, options, %{}}
+      end
+    end
+
+    test "only options with before_serialize" do
+      assert %{} ==
+        ReturnOnlyWantedFieldsWithBeforeSerializeTest.serialize(
+          %{a: 1, b: 2},
+          %{},
+          [{ReturnOnlyWantedFieldsWithBeforeSerializeTest, only: [:b]}]
+        )
+    end
   end
 
 end
