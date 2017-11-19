@@ -573,4 +573,49 @@ defmodule Maru.EntityTest do
     end
   end
 
+  describe "return only wanted fields" do
+    defmodule ReturnOnlyWantedFieldsTest do
+      use Maru.Entity
+
+      expose :a
+      expose :b do
+        expose :c, fn item -> get_in(item, [:b, :c]) end
+        expose :d, fn item -> get_in(item, [:b, :d]) end
+      end
+      expose :e
+    end
+
+    test "only options" do
+      assert %{a: 1, b: %{c: 2, d: 3}} ==
+        ReturnOnlyWantedFieldsTest.serialize(
+          %{a: 1, b: %{c: 2, d: 3}, e: 4},
+          %{},
+          [{ReturnOnlyWantedFieldsTest, only: [:a, :b]}]
+        )
+
+      assert %{b: %{c: 2}, e: 4} ==
+        ReturnOnlyWantedFieldsTest.serialize(
+          %{a: 1, b: %{c: 2, d: 3}, e: 4},
+          %{},
+          [{ReturnOnlyWantedFieldsTest, only: [:e, b: [:c]]}]
+        )
+    end
+
+    test "except options" do
+      assert %{e: 4} ==
+        ReturnOnlyWantedFieldsTest.serialize(
+          %{a: 1, b: %{c: 2, d: 3}, e: 4},
+          %{},
+          [{ReturnOnlyWantedFieldsTest, except: [:a, :b]}]
+        )
+
+      assert %{a: 1, b: %{d: 3}} ==
+        ReturnOnlyWantedFieldsTest.serialize(
+          %{a: 1, b: %{c: 2, d: 3}, e: 4},
+          %{},
+          [{ReturnOnlyWantedFieldsTest, except: [:e, b: [:c]]}]
+        )
+    end
+  end
+
 end

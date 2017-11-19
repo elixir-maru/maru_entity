@@ -9,6 +9,9 @@
 
     `expose :posts, with: PostEntity` should be `expose :posts, with: List[PostEntity]`
 
+## v0.2.2-dev
+* Enhancements
+  * support only/excpet to return only wanted fields
 
 ## v0.2.1 (2017-11-03)
 * Enhancements

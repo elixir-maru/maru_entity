@@ -28,19 +28,63 @@ defmodule Maru.Entity.Runtime do
     terminate(id, serializer.type, serializer.options, state)
   end
 
-
   @spec init(Keyword.t) :: state
   defp init(options) do
     max_concurrency = Keyword.get(options, :max_concurrency) || Application.get_env(:maru_entity, :default_max_concurrency) || System.schedulers_online * 4
+    exposure_filter_funcs =
+      for {entity_module, options} <- Keyword.drop(options, [:max_concurrency]) do
+        only = Keyword.get(options, :only, nil)
+        except = Keyword.get(options, :except, nil)
+        attr_groups = flat_attrs(only || except || [], [])
+        filter_func =
+          cond do
+            not is_nil(only) and not is_nil(except) ->
+              raise ":only and :except are in conflict!"
+
+            not is_nil(only) ->
+              fn exposure ->
+                Enum.any?(attr_groups, &start_with?(exposure.attr_group, &1) in [true, :exactly])
+              end
+
+            not is_nil(except) ->
+              fn exposure ->
+                Enum.all?(attr_groups, &start_with?(exposure.attr_group, &1) in [false, :exactly])
+              end
+
+            true ->
+              fn _ -> true end
+          end
+        {entity_module, filter_func}
+      end
     %{ data:      create_ets(:duplicate_bag),
        old_link:  create_ets(:duplicate_bag),
        new_link:  create_ets(:duplicate_bag),
        old_batch: create_ets(:set),
        new_batch: create_ets(:set),
        max_concurrency: max_concurrency,
+       exposure_filter_funcs: exposure_filter_funcs,
     }
   end
 
+  defp flat_attrs([], result), do: result
+
+  defp flat_attrs([{key, nested} | t], result) do
+    new_result =
+      for nested_result <- flat_attrs(nested, []) do
+        [key | nested_result]
+      end
+
+    flat_attrs(t, new_result ++ [[key]] ++ result)
+  end
+
+  defp flat_attrs([h | t], result) do
+    flat_attrs(t, [[h, :*] | result])
+  end
+
+  defp start_with?([], []), do: :exactly
+  defp start_with?(_, [:*]), do: true
+  defp start_with?([h | t1], [h | t2]), do: start_with?(t1, t2)
+  defp start_with?(_, _), do: false
 
   @spec terminate(id, Maru.Entity.one_or_many, Entity.options, state) :: Maru.Entity.object
   defp terminate(id, type, options, state) do
@@ -241,7 +285,13 @@ defmodule Maru.Entity.Runtime do
           %Instance{module: serializer.module, data: result}
 
         {:ok, instance, options, data} ->
-          exposures = serializer.module.__exposures__
+          exposure_filter_func =
+            Keyword.get(
+              state.exposure_filter_funcs,
+              serializer.module,
+              fn _ -> true end
+            )
+          exposures = Enum.filter(serializer.module.__exposures__, exposure_filter_func)
           do_serialize(
             exposures,
             %Instance{module: serializer.module, data: data},
@@ -270,7 +320,6 @@ defmodule Maru.Entity.Runtime do
   rescue
     e -> exit({:error, e, System.stacktrace()})
   end
-
 
   @spec do_serialize(list(Exposure.Runtime.t), Maru.Entity.object, Maru.Entity.instance, Maru.Entity.options, state) :: Maru.Entity.object
   defp do_serialize([], result, _instance, _options, _state), do: result
