@@ -7,11 +7,16 @@
 
 * explicit declaration for instance list
 
-    `expose :posts, with: PostEntity` should be `expose :posts, with: List[PostEntity]`
+    `expose :posts, with: PostEntity` should be `expose :posts, using: List[PostEntity]`
 
 ## v0.2.2-dev
 * Enhancements
   * support only/excpet to return only wanted fields
+  * `before_serialize/2` hook
+  * `before_finish/2` hook
+
+* Bugfix
+  * alias modules in `using`
 
 ## v0.2.1 (2017-11-03)
 * Enhancements
