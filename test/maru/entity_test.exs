@@ -23,7 +23,9 @@ defmodule Maru.EntityTest do
     use Maru.Entity
 
     expose :body
-    expose :post, using: Maru.EntityTest.PostEntity, if: fn comment, _options -> comment.post != nil end
+    expose :post, using: Maru.EntityTest.PostEntity, if: &should_expose_post?/2
+
+    defp should_expose_post?(comment, _options), do: comment.post != nil
   end
 
   defmodule UnlessCommentEntity do
