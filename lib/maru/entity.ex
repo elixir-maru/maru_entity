@@ -275,7 +275,7 @@ defmodule Maru.Entity do
         {nil, nil} -> quote do
             fn(_, _) -> true end
           end
-        {nil, {:fn, _, _}=f} ->
+        {nil, f} ->
           quote do
             fn(instance, options) ->
               case unquote(f).(instance, options) do
@@ -284,7 +284,7 @@ defmodule Maru.Entity do
               end
             end
           end
-        {{:fn, _, _}=f, nil} ->
+        {f, nil} ->
           quote do
             fn(instance, options) ->
               case unquote(f).(instance, options) do
