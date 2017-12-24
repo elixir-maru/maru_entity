@@ -24,7 +24,7 @@ defmodule Maru.Entity.Runtime do
   def serialize(serializer, instance, options) do
     state = init(options)
     id = save_link(serializer, instance, state.old_link)
-    state = do_loop(state)
+    state = do_loop(state, serializer.options)
     terminate(id, serializer.type, serializer.options, state)
   end
 
@@ -150,20 +150,21 @@ defmodule Maru.Entity.Runtime do
        end)
     |> case do
          result when is_nil(module) -> result
-         result -> module.before_finish(result, options)
+         result ->
+           module.before_finish(result, options)
        end
   end
 
 
-  @spec do_loop(state) :: state
-  defp do_loop(state) do
+  @spec do_loop(state, Entity.options()) :: state
+  defp do_loop(state, options) do
     unless :ets.info(state.old_link)[:size] == 0 do
       do_loop_link_monitor(state)
     end
 
     unless :ets.info(state.old_batch)[:size] == 0 do
       :ets.delete_all_objects(state.old_link)
-      do_loop_batch(state)
+      do_loop_batch(state, options)
       do_loop_link_monitor(state)
     end
 
@@ -177,7 +178,7 @@ defmodule Maru.Entity.Runtime do
            new_link:  state.old_link,
            old_batch: state.new_batch,
            new_batch: state.old_batch,
-        } |> do_loop
+        } |> do_loop(options)
     end
   end
 
@@ -226,8 +227,8 @@ defmodule Maru.Entity.Runtime do
   end
 
 
-  @spec do_loop_batch(state) :: :ok
-  defp do_loop_batch(state) do
+  @spec do_loop_batch(state, Entity.options()) :: :ok
+  defp do_loop_batch(state, options) do
     data =
       :ets.foldl(fn {id, serializer, %Batch{module: module, key: key}}, acc ->
         case acc do
@@ -241,7 +242,7 @@ defmodule Maru.Entity.Runtime do
         end
       end, %{}, state.old_batch)
       |> Enum.map(fn
-        {module, value} -> {module, Task.async(module, :resolve, [Map.keys(value)])}
+        {module, value} -> {module, Task.async(module, :resolve, [Map.keys(value), options])}
       end)
       |> Enum.map(fn
         {module, task} -> {module, Task.await(task)}

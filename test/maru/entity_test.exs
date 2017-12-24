@@ -130,7 +130,7 @@ defmodule Maru.EntityTest do
           instance.author_id
         end
 
-        def resolve(keys) do
+        def resolve(keys, _) do
           for id <- keys, into: %{} do
             {id, %{id: id, name: "Author#{id}"}}
           end
@@ -168,7 +168,7 @@ defmodule Maru.EntityTest do
           instance.author_id
         end
 
-        def resolve(keys) do
+        def resolve(keys, _) do
           [_ | keys] = keys
           for id <- keys, into: %{} do
             {id, [%{id: id, name: "Author1_#{id}"}, %{id: id, name: "Author2_#{id}"}]}
@@ -197,7 +197,7 @@ defmodule Maru.EntityTest do
           instance.author_id
         end
 
-        def resolve(keys) do
+        def resolve(keys, _) do
           for id <- keys, into: %{} do
             {id, %{name: "Author#{id}"}}
           end
@@ -422,7 +422,7 @@ defmodule Maru.EntityTest do
         instance.id
       end
 
-      def resolve(keys) do
+      def resolve(keys, _) do
         for id <- keys, into: %{} do
           {id, %{str_id: to_string(id)}}
         end
