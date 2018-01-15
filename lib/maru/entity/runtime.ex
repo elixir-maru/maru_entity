@@ -219,7 +219,7 @@ defmodule Maru.Entity.Runtime do
         {num - 1, rest + 1}
     end, {state.max_concurrency, 0}, state.old_link)
 
-    for _ <- 1..rest do
+    for _ <- :lists.seq(1, rest) do
       sync.(fn -> :ok end)
     end
 
