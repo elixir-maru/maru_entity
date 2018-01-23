@@ -245,7 +245,7 @@ defmodule Maru.Entity.Runtime do
         {module, value} -> {module, Task.async(module, :resolve, [Map.keys(value), options])}
       end)
       |> Enum.map(fn
-        {module, task} -> {module, Task.await(task)}
+        {module, task} -> {module, Task.await(task, :infinity)}
       end)
       |> Enum.into(%{})
 
