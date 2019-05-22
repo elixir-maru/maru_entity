@@ -48,35 +48,36 @@ defmodule Maru.Entity do
   `%{first_name: "X", last_name: "Y"}` => `%{username: "X Y"}`
   """
 
-  @type instance    :: map
-  @type object      :: map
-  @type options     :: map
-  @type group       :: list(atom)
+  @type instance :: map
+  @type object :: map
+  @type options :: map
+  @type group :: list(atom)
   @type one_or_many :: :one | :many
 
   @doc false
   defmacro __using__(_) do
     quote do
-      Module.register_attribute __MODULE__, :exposures, persist: true
+      Module.register_attribute(__MODULE__, :exposures, persist: true)
       @group []
       @exposures []
 
-      import          unquote(__MODULE__)
+      import unquote(__MODULE__)
       @before_compile unquote(__MODULE__)
 
       @doc """
       Serialize given instance into an object.
       """
-      @spec serialize(Entity.instance, Entity.options, Keyword.t) :: Maru.Entity.object
+      @spec serialize(Entity.instance(), Entity.options(), Keyword.t()) :: Maru.Entity.object()
       def serialize(instance, options \\ %{}, entity_options \\ []) do
         %Serializer{
-          module:  __MODULE__,
-          type:    is_list(instance) && :many || :one,
-          options: options,
-        } |> Maru.Entity.Runtime.serialize(instance, entity_options)
+          module: __MODULE__,
+          type: (is_list(instance) && :many) || :one,
+          options: options
+        }
+        |> Maru.Entity.Runtime.serialize(instance, entity_options)
       end
 
-      defoverridable [serialize: 1, serialize: 2, serialize: 3]
+      defoverridable serialize: 1, serialize: 2, serialize: 3
 
       @doc """
       Default error handler.
@@ -86,23 +87,25 @@ defmodule Maru.Entity do
         raise exception
       end
 
-      defoverridable [handle_error: 3]
+      defoverridable handle_error: 3
 
       @doc """
       Before finish hook.
       """
-      @spec before_finish(Maru.Entity.object(), Maru.Entity.options) :: any()
+      @spec before_finish(Maru.Entity.object(), Maru.Entity.options()) :: any()
       def before_finish(item, _options), do: item
 
-      defoverridable [before_finish: 2]
+      defoverridable before_finish: 2
 
       @doc """
       Before serialize hook.
       """
-      @spec before_serialize(Maru.Entity.object(), Maru.Entity.options) :: {:ok, Maru.Entity.object(), Maru.Entity.options, Maru.Entity.object} | {:halt, any()}
+      @spec before_serialize(Maru.Entity.object(), Maru.Entity.options()) ::
+              {:ok, Maru.Entity.object(), Maru.Entity.options(), Maru.Entity.object()}
+              | {:halt, any()}
       def before_serialize(item, options), do: {:ok, item, options, %{}}
 
-      defoverridable [before_serialize: 2]
+      defoverridable before_serialize: 2
     end
   end
 
@@ -139,11 +142,25 @@ defmodule Maru.Entity do
   defmacro extend(module, options \\ []) do
     func =
       case {options[:only], options[:except]} do
-        {nil, nil}    -> quote do fn _ -> true end end
-        {nil, except} -> quote do fn i -> not Utils.attr_match?(i.information.attr_group, unquote(except)) end end
-        {only,  nil}  -> quote do fn i -> Utils.attr_match?(i.information.attr_group, unquote(only)) end end
-        {_, _}        -> raise ":only and :except conflict"
+        {nil, nil} ->
+          quote do
+            fn _ -> true end
+          end
+
+        {nil, except} ->
+          quote do
+            fn i -> not Utils.attr_match?(i.information.attr_group, unquote(except)) end
+          end
+
+        {only, nil} ->
+          quote do
+            fn i -> Utils.attr_match?(i.information.attr_group, unquote(only)) end
+          end
+
+        {_, _} ->
+          raise ":only and :except conflict"
       end
+
     quote do
       unquote(module).__info__(:attributes)
       |> Keyword.get(:exposures)
@@ -164,14 +181,17 @@ defmodule Maru.Entity do
   @doc """
   Nested Exposure.
   """
-  defmacro expose(group, [do: block]) when is_atom(group) do
+  defmacro expose(group, do: block) when is_atom(group) do
     quote do
       group = @group
       @group @group ++ [unquote(group)]
-      @exposures @exposures ++ [%Exposure{
-        runtime: default_runtime(:group, @group),
-        information: %Information{attr_group: @group},
-      }]
+      @exposures @exposures ++
+                   [
+                     %Exposure{
+                       runtime: default_runtime(:group, @group),
+                       information: %Information{attr_group: @group}
+                     }
+                   ]
       unquote(block)
       @group group
     end
@@ -186,12 +206,11 @@ defmodule Maru.Entity do
     do_expose(attr_or_attrs, options, nil, __CALLER__)
   end
 
-
-  defmacro expose(attr_or_attrs, {:fn, _, _}=do_func) do
+  defmacro expose(attr_or_attrs, {:fn, _, _} = do_func) do
     do_expose(attr_or_attrs, [], do_func, __CALLER__)
   end
 
-  defmacro expose(attr_or_attrs, {:&, _, _}=do_func) do
+  defmacro expose(attr_or_attrs, {:&, _, _} = do_func) do
     do_expose(attr_or_attrs, [], do_func, __CALLER__)
   end
 
@@ -204,18 +223,19 @@ defmodule Maru.Entity do
 
   defp do_expose(attr_or_attrs, options, do_func, caller) when is_list(options) do
     quote bind_quoted: [
-      attr_or_attrs: attr_or_attrs,
-      do_func:       Macro.escape(expand_alias(do_func, caller)),
-      options:       Macro.escape(expand_alias(options, caller))
-    ] do
+            attr_or_attrs: attr_or_attrs,
+            do_func: Macro.escape(expand_alias(do_func, caller)),
+            options: Macro.escape(expand_alias(options, caller))
+          ] do
       for attr_name <- to_attr_list(attr_or_attrs) do
-        @exposures @exposures ++ [
-          options
-          |> Keyword.put(:attr_name, attr_name)
-          |> Keyword.put(:group, @group ++ [attr_name])
-          |> Keyword.put(:do_func, do_func)
-          |> parse()
-        ]
+        @exposures @exposures ++
+                     [
+                       options
+                       |> Keyword.put(:attr_name, attr_name)
+                       |> Keyword.put(:group, @group ++ [attr_name])
+                       |> Keyword.put(:do_func, do_func)
+                       |> parse()
+                     ]
       end
     end
   end
@@ -223,31 +243,44 @@ defmodule Maru.Entity do
   def to_attr_list(attrs) when is_list(attrs), do: attrs
   def to_attr_list(attr) when is_atom(attr), do: [attr]
 
-  @spec parse(Keyword.t) :: Maru.Entity.Struct.Exposure.t
+  @spec parse(Keyword.t()) :: Maru.Entity.Struct.Exposure.t()
   def parse(options) do
     pipeline = [
-      :attr_name, :serializer, :if_func, :do_func, :default, :build_struct,
+      :attr_name,
+      :serializer,
+      :if_func,
+      :do_func,
+      :default,
+      :build_struct
     ]
+
     accumulator = %{
-      options:     options,
-      runtime:     quote do %Runtime{} end,
-      information: %Information{},
+      options: options,
+      runtime:
+        quote do
+          %Runtime{}
+        end,
+      information: %Information{}
     }
-    Enum.reduce(pipeline, accumulator, &(do_parse(&1, &2)))
+
+    Enum.reduce(pipeline, accumulator, &do_parse(&1, &2))
   end
 
   defp do_parse(:attr_name, %{options: options, runtime: runtime, information: information}) do
-    group     = options |> Keyword.fetch!(:group)
+    group = options |> Keyword.fetch!(:group)
     attr_name = options |> Keyword.fetch!(:attr_name)
     param_key = options |> Keyword.get(:source, attr_name)
-    options   = options |> Keyword.drop([:attr_name, :group, :source]) |> Keyword.put(:param_key, param_key)
-    %{ options: options,
-       runtime: quote do
-         %{ unquote(runtime) |
-            attr_group: unquote(group),
-          }
-       end,
-       information: %{information | attr_group: group},
+
+    options =
+      options |> Keyword.drop([:attr_name, :group, :source]) |> Keyword.put(:param_key, param_key)
+
+    %{
+      options: options,
+      runtime:
+        quote do
+          %{unquote(runtime) | attr_group: unquote(group)}
+        end,
+      information: %{information | attr_group: group}
     }
   end
 
@@ -255,110 +288,119 @@ defmodule Maru.Entity do
     default = Keyword.get(options, :default)
     options = Keyword.drop(options, [:default])
 
-    %{ options: options,
-       runtime: quote do
-         %{ unquote(runtime) |
-            default: unquote(default),
-          }
-       end,
-       information: %{information | default: default},
+    %{
+      options: options,
+      runtime:
+        quote do
+          %{unquote(runtime) | default: unquote(default)}
+        end,
+      information: %{information | default: default}
     }
   end
 
   defp do_parse(:if_func, %{options: options, runtime: runtime, information: information}) do
-    if_func     = options |> Keyword.get(:if)
+    if_func = options |> Keyword.get(:if)
     unless_func = options |> Keyword.get(:unless)
-    options     = options |> Keyword.drop([:if, :unless])
-    is_nil(if_func) or is_nil(unless_func) ||  raise ":if and :unless conflict"
+    options = options |> Keyword.drop([:if, :unless])
+    is_nil(if_func) or is_nil(unless_func) || raise ":if and :unless conflict"
+
     func =
       case {if_func, unless_func} do
-        {nil, nil} -> quote do
-            fn(_, _) -> true end
+        {nil, nil} ->
+          quote do
+            fn _, _ -> true end
           end
+
         {nil, f} ->
           quote do
-            fn(instance, options) ->
+            fn instance, options ->
               case unquote(f).(instance, options) do
                 x when x in [false, nil] -> true
-                _                        -> false
+                _ -> false
               end
             end
           end
+
         {f, nil} ->
           quote do
-            fn(instance, options) ->
+            fn instance, options ->
               case unquote(f).(instance, options) do
                 x when x in [false, nil] -> false
-                _                        -> true
+                _ -> true
               end
             end
           end
       end
-    %{ options: options,
-       runtime: quote do
-         %{ unquote(runtime) |
-            if_func: unquote(func)
-          }
-       end,
-       information: information,
+
+    %{
+      options: options,
+      runtime:
+        quote do
+          %{unquote(runtime) | if_func: unquote(func)}
+        end,
+      information: information
     }
   end
 
   defp do_parse(:serializer, %{options: options, runtime: runtime, information: information}) do
     serializer =
       case Keyword.get(options, :using, nil) do
-        nil -> nil
+        nil ->
+          nil
+
         {{:., _, [Access, :get]}, _, [List, module]} ->
           %Serializer{module: module, type: :many}
+
         module ->
           %Serializer{module: module, type: :one}
       end
 
-    %{ options: options |> Keyword.drop([:using]),
-       runtime: quote do
-         %{ unquote(runtime) |
-            serializer: unquote(Macro.escape(serializer))
-         }
-       end,
-       information: information,
-     }
+    %{
+      options: options |> Keyword.drop([:using]),
+      runtime:
+        quote do
+          %{unquote(runtime) | serializer: unquote(Macro.escape(serializer))}
+        end,
+      information: information
+    }
   end
 
   defp do_parse(:do_func, %{options: options, runtime: runtime, information: information}) do
-    do_func    = options |> Keyword.get(:do_func)
-    param_key  = options |> Keyword.fetch!(:param_key)
-    batch      = Keyword.get(options, :batch)
-    options    = options |> Keyword.drop([:do_func, :param_key, :batch])
+    do_func = options |> Keyword.get(:do_func)
+    param_key = options |> Keyword.fetch!(:param_key)
+    batch = Keyword.get(options, :batch)
+    options = options |> Keyword.drop([:do_func, :param_key, :batch])
+
     func =
       cond do
         not is_nil(batch) ->
           quote do
-            fn(instance, options) ->
+            fn instance, options ->
               %Batch{
                 module: unquote(batch),
-                key: unquote(batch).key(instance, options),
+                key: unquote(batch).key(instance, options)
               }
             end
           end
 
         is_nil(do_func) ->
           quote do
-            fn(instance, _options) ->
+            fn instance, _options ->
               Map.get(instance, unquote(param_key))
             end
           end
 
         true ->
           do_func
-
       end
-    %{ options: options,
-       runtime: quote do
-         %{ unquote(runtime) |
-            do_func: unquote(func)
-          }
-       end,
-       information: information,
+
+    %{
+      options: options,
+      runtime:
+        quote do
+          %{unquote(runtime) | do_func: unquote(func)}
+        end,
+      information: information
     }
   end
 
@@ -376,13 +418,13 @@ defmodule Maru.Entity do
   @doc """
   Generate default runtime struct.
   """
-  @spec default_runtime(atom(), group()) :: Macro.t
+  @spec default_runtime(atom(), group()) :: Macro.t()
   def default_runtime(:group, group) do
     quote do
       %Runtime{
         attr_group: unquote(group),
-        if_func: fn (_, _) -> true end,
-        do_func: fn (_, _) -> %{} end,
+        if_func: fn _, _ -> true end,
+        do_func: fn _, _ -> %{} end
       }
     end
   end
@@ -390,7 +432,7 @@ defmodule Maru.Entity do
   defmacro __before_compile__(env) do
     exposures =
       Module.get_attribute(env.module, :exposures)
-      |> Enum.map(fn(e) ->
+      |> Enum.map(fn e ->
         e.runtime
       end)
 
@@ -398,7 +440,7 @@ defmodule Maru.Entity do
       @doc """
       Return list of exposures.
       """
-      @spec __exposures__ :: list(Runtime.t)
+      @spec __exposures__ :: list(Runtime.t())
       def __exposures__ do
         unquote(exposures)
       end
