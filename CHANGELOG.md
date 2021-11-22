@@ -9,7 +9,7 @@
 
     `expose :posts, with: PostEntity` should be `expose :posts, using: List[PostEntity]`
 
-## v0.2.2-dev
+## v0.2.2
 * Enhancements
   * support only/excpet to return only wanted fields
   * `before_serialize/2` hook
