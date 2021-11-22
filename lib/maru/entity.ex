@@ -178,9 +178,6 @@ defmodule Maru.Entity do
     do_expose(attr_or_attrs, [], nil, __CALLER__)
   end
 
-  @doc """
-  Nested Exposure.
-  """
   defmacro expose(group, do: block) when is_atom(group) do
     quote do
       group = @group
