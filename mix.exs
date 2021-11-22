@@ -4,7 +4,7 @@ defmodule MaruEntity.Mixfile do
   def project do
     [
       app: :maru_entity,
-      version: "0.2.2-dev",
+      version: "0.2.2",
       elixir: "~> 1.3",
       build_embedded: Mix.env() == :prod,
       start_permanent: Mix.env() == :prod,
@@ -26,9 +26,9 @@ defmodule MaruEntity.Mixfile do
 
   defp deps do
     [
-      {:ex_doc, "~> 0.12", only: :docs},
-      {:excoveralls, "~> 0.5", only: :test},
-      {:dialyxir, "~> 0.5", only: :test, runtime: false}
+      {:ex_doc, "~> 0.26", only: :docs},
+      {:excoveralls, "~> 0.14", only: :test},
+      {:dialyxir, "~> 1.1", only: :test, runtime: false}
     ]
   end
 
