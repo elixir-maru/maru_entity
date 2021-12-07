@@ -176,13 +176,13 @@ defmodule Maru.Entity.Runtime do
   @spec do_loop(state, Entity.options()) :: state
   defp do_loop(state, options) do
     unless :ets.info(state.old_link)[:size] == 0 do
-      do_loop_link(state)
+      do_loop_link_monitor(state)
     end
 
     unless :ets.info(state.old_batch)[:size] == 0 do
       :ets.delete_all_objects(state.old_link)
       do_loop_batch(state, options)
-      do_loop_link(state)
+      do_loop_link_monitor(state)
     end
 
     case :ets.info(state.new_link)[:size] + :ets.info(state.new_batch)[:size] do
@@ -204,15 +204,36 @@ defmodule Maru.Entity.Runtime do
     end
   end
 
-  @spec do_loop_link(state) :: :ok
-  defp do_loop_link(state) do
+  @spec do_loop_link_monitor(state) :: :ok
+  defp do_loop_link_monitor(state) do
+    parent = self()
+    {pid, ref} = Process.spawn(fn -> do_loop_link(parent, state) end, [:monitor])
+
+    receive do
+      {:DOWN, ^ref, :process, ^pid, :normal} ->
+        :ok
+
+      {:DOWN, ^ref, :process, ^pid, reason} ->
+        {:error, exception, stack} = reason
+        :erlang.raise(:error, exception, stack)
+    end
+  end
+
+  @spec do_loop_link(pid, state) :: :ok
+  defp do_loop_link(parent, state) do
     Process.flag(:trap_exit, true)
+    parent_ref = Process.monitor(parent)
 
     sync = fn continue ->
       receive do
-        {:EXIT, _pid, :normal} -> continue.()
-        {:EXIT, _pid, {:error, exception, stack}} -> :erlang.raise(:error, exception, stack)
-        {:EXIT, _pid, reason} -> exit(reason)
+        {:EXIT, _pid, :normal} ->
+          continue.()
+
+        {:EXIT, _pid, reason} ->
+          exit(reason)
+
+        {:DOWN, ^parent_ref, :process, ^parent, _} ->
+          exit(:kill)
       end
     end
 

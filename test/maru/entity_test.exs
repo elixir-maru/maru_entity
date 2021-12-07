@@ -342,7 +342,7 @@ defmodule Maru.EntityTest do
           send(:test_runner, :worker_ready)
 
           receive do
-            {:EXIT, _pid, :can_not_kill} ->
+            {:EXIT, _pid, :kill} ->
               # expected kill of the middleman process
               send(:test_runner, :worker_killed)
               :ok
@@ -362,8 +362,7 @@ defmodule Maru.EntityTest do
         )
 
       assert_receive :worker_ready, 1_000
-      # `kill` ets owner process, the process will not receive any message
-      Process.exit(pid, :can_not_kill)
+      Process.exit(pid, :kill)
       assert_receive :worker_killed, 1_000
     end
   end
