@@ -362,6 +362,26 @@ defmodule Maru.EntityTest do
       Process.exit(pid, :kill)
       assert_receive :worker_killed, 1_000
     end
+
+    test "using after function" do
+      defmodule PostEntity9 do
+        use Maru.Entity
+
+        expose :id
+        expose :author, [using: Maru.EntityTest.AuthorEntity9], fn post ->
+          %{name: "#{post.author.first_name} #{post.author.last_name}"}
+        end
+      end
+
+      defmodule AuthorEntity9 do
+        use Maru.Entity
+
+        expose :name
+      end
+
+      post = %{id: 100, author: %{first_name: "F", last_name: "L"}}
+      assert %{author: %{name: "F L"}, id: 100} = PostEntity9.serialize(post)
+    end
   end
 
   describe "test alias" do
