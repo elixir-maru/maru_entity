@@ -373,7 +373,7 @@ defmodule Maru.Entity.Runtime do
     :ets.insert(state.data, {id, result, idx})
     :ok
   rescue
-    e -> exit({:error, e, System.stacktrace()})
+    e -> exit({:error, e, __STACKTRACE__})
   end
 
   @spec do_serialize(
