@@ -336,7 +336,7 @@ defmodule Maru.Entity.Runtime do
               fn _ -> true end
             )
 
-          exposures = Enum.filter(serializer.module.__exposures__, exposure_filter_func)
+          exposures = Enum.filter(serializer.module.__exposures__(), exposure_filter_func)
 
           do_serialize(
             exposures,
@@ -355,7 +355,7 @@ defmodule Maru.Entity.Runtime do
             )
 
           exposures =
-            serializer.module.__exposures__
+            serializer.module.__exposures__()
             |> Enum.filter(exposure_filter_func)
             |> Enum.filter(fn exposure ->
               exposure.attr_group in Enum.map(attrs, &List.wrap/1)
