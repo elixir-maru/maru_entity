@@ -368,6 +368,7 @@ defmodule Maru.EntityTest do
         use Maru.Entity
 
         expose :id
+
         expose :author, [using: Maru.EntityTest.AuthorEntity9], fn post ->
           %{name: "#{post.author.first_name} #{post.author.last_name}"}
         end
