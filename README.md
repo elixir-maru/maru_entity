@@ -3,7 +3,12 @@ Maru.Entity
 
 > Parallelizable serializer inspired by [grape-entity](https://github.com/ruby-grape/grape-entity).
 
-[![Build Status](https://img.shields.io/travis/elixir-maru/maru_entity.svg?style=flat-square)](https://travis-ci.org/elixir-maru/maru_entity)
+[![Module Version](https://img.shields.io/hexpm/v/maru_entity.svg)](https://hex.pm/packages/maru_entity)
+[![Hex Docs](https://img.shields.io/badge/hex-docs-lightgreen.svg)](https://hexdocs.pm/maru_entity/)
+[![Total Download](https://img.shields.io/hexpm/dt/maru_entity.svg)](https://hex.pm/packages/maru_entity)
+[![License](https://img.shields.io/hexpm/l/maru_entity.svg)](https://github.com/elixir-maru/maru_entity/blob/master/LICENSE)
+[![Last Updated](https://img.shields.io/github/last-commit/elixir-maru/maru_entity.svg)](https://github.com/elixir-maru/maru_entity/commits/master)
+[![CI](https://github.com/elixir-maru/maru_entity/actions/workflows/ci.yml/badge.svg)](https://github.com/elixir-maru/maru_entity/actions)
 [![Coveralls](https://img.shields.io/coveralls/elixir-maru/maru_entity.svg?style=flat-square)](https://coveralls.io/github/elixir-maru/maru_entity)
 
 ### Usage
