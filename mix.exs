@@ -35,7 +35,7 @@ defmodule MaruEntity.Mixfile do
   defp package do
     %{
       maintainers: ["Xiangrong Hao", "Teodor Pripoae"],
-      licenses: ["WTFPL"],
+      licenses: ["Apache-2.0"],
       links: %{"Github" => "https://github.com/elixir-maru/maru_entity"}
     }
   end
