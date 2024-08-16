@@ -4,8 +4,8 @@ defmodule MaruEntity.Mixfile do
   def project do
     [
       app: :maru_entity,
-      version: "0.2.3",
-      elixir: "~> 1.3",
+      version: "0.2.4",
+      elixir: "~> 1.12",
       build_embedded: Mix.env() == :prod,
       start_permanent: Mix.env() == :prod,
       deps: deps(),
@@ -21,7 +21,9 @@ defmodule MaruEntity.Mixfile do
   end
 
   def application do
-    [applications: [:logger]]
+    [
+      extra_applications: [:logger]
+    ]
   end
 
   defp deps do
