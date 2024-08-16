@@ -22,7 +22,7 @@ defmodule MaruEntity.Mixfile do
 
   def application do
     [
-      extra_applications: [:logger, :runtime_tools, :public_key, :ssl]
+      extra_applications: [:logger]
     ]
   end
 
