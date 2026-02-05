@@ -636,7 +636,7 @@ defmodule Maru.EntityTest do
         end
       end
 
-      def handle_error([:group, :id], _, _) do
+      def handle_error([:group, :id], _, _, _stacktrace) do
         {:ok, 900_303}
       end
     end
@@ -648,7 +648,7 @@ defmodule Maru.EntityTest do
         raise "parse id error"
       end
 
-      def handle_error([:id], _, _) do
+      def handle_error([:id], _, _, _stacktrace) do
         {:halt, nil}
       end
     end

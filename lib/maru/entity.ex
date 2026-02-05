@@ -82,12 +82,13 @@ defmodule Maru.Entity do
       @doc """
       Default error handler.
       """
-      @spec handle_error(list(atom()), Exception.t(), Maru.Entity.object()) :: any()
-      def handle_error(_attr_group, exception, _data) do
-        raise exception
+      @spec handle_error(list(atom()), Exception.t(), Maru.Entity.object(), Exception.stacktrace()) ::
+              any()
+      def handle_error(_attr_group, exception, _data, stacktrace) do
+        reraise exception, stacktrace
       end
 
-      defoverridable handle_error: 3
+      defoverridable handle_error: 4
 
       @doc """
       Before finish hook.

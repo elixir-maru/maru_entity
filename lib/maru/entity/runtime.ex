@@ -401,7 +401,7 @@ defmodule Maru.Entity.Runtime do
           {:ok, (is_nil(value) && h.default) || value}
         rescue
           e ->
-            result.module.handle_error(h.attr_group, e, result.data)
+            result.module.handle_error(h.attr_group, e, result.data, __STACKTRACE__)
         end
 
       false ->
